@@ -7,7 +7,8 @@ import Icon from '../components/atoms/Icon'
 
 export default function HouseholdScreen() {
   const lang = useStore(s => s.lang)
-  const t = useT(lang).hh
+  const tFull = useT(lang)
+  const t = tFull.hh
   const households = useStore(s => s.households)
   const activeHouseholdId = useStore(s => s.activeHouseholdId)
   const session = useStore(s => s.session)
@@ -22,10 +23,12 @@ export default function HouseholdScreen() {
   const [thresholds, setThresholds] = useState(['3'])
   const [warnAll, setWarnAll] = useState(false)
   const [genLoading, setGenLoading] = useState(false)
+  const [stats, setStats] = useState(null)
 
   useEffect(() => {
     if (!hh) return
     api.households.inviteActive(hh.id).then(setInvite).catch(() => {})
+    api.stats.get(hh.id).then(setStats).catch(() => {})
     api.notifications.get(hh.id).then(ns => {
       setNotifSettings(ns)
       setThresholds(ns.threshold_days ?? ['3'])
@@ -124,6 +127,60 @@ export default function HouseholdScreen() {
         )}
       </Card>
 
+      {/* Waste stats card */}
+      {stats && (
+        <Card style={{ marginBottom: 16 }}>
+          <Label style={{ marginBottom: 14 }}>{tFull.stats.title}</Label>
+          {(stats.month.consumed + stats.month.wasted + stats.month.added) === 0 ? (
+            <p style={{ fontSize: 13, color: 'var(--color-ink-faint)', margin: 0 }}>{tFull.stats.noData}</p>
+          ) : (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 14 }}>
+                <StatBox value={stats.month.consumed} label={tFull.stats.consumed} color="var(--color-primary)" bg="var(--color-primary-tint)" />
+                <StatBox value={stats.month.wasted} label={tFull.stats.wasted} color="var(--color-danger)" bg="var(--color-danger-bg)" />
+                <StatBox value={stats.month.added} label={tFull.stats.added} color="var(--color-ink-soft)" bg="var(--color-surface2)" />
+              </div>
+              {/* Consumed vs wasted ratio bar */}
+              {(stats.month.consumed + stats.month.wasted) > 0 && (
+                <div style={{ display: 'flex', height: 8, borderRadius: 100, overflow: 'hidden', background: 'var(--color-surface2)' }}>
+                  <div style={{
+                    width: `${(stats.month.consumed / (stats.month.consumed + stats.month.wasted)) * 100}%`,
+                    background: 'var(--color-primary)', transition: 'width 0.6s var(--ease-spring)',
+                  }} />
+                  <div style={{ flex: 1, background: 'var(--color-danger)' }} />
+                </div>
+              )}
+            </>
+          )}
+        </Card>
+      )}
+
+      {/* Activity feed — shared-kitchen log */}
+      {stats?.activity?.length > 0 && (
+        <Card style={{ marginBottom: 16 }}>
+          <Label style={{ marginBottom: 12 }}>{tFull.activity.title}</Label>
+          {stats.activity.slice(0, 10).map((a, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '9px 0',
+              borderBottom: i < Math.min(stats.activity.length, 10) - 1 ? '0.5px solid var(--color-border)' : 'none',
+            }}>
+              <Avatar name={a.user.display_name} avatarIndex={a.user.avatar_index} size={28} />
+              <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, color: 'var(--color-ink-soft)' }}>
+                <span style={{ fontWeight: 700, color: 'var(--color-ink)' }}>{a.user.display_name}</span>
+                {' '}{tFull.activity[a.action] ?? a.action}{' '}
+                <span style={{ fontWeight: 600, color: a.action === 'wasted' ? 'var(--color-danger)' : 'var(--color-ink)' }}>
+                  {a.item_name}{a.quantity > 1 ? ` ×${a.quantity}` : ''}
+                </span>
+              </div>
+              <span style={{ fontSize: 11.5, color: 'var(--color-ink-faint)', flexShrink: 0 }}>
+                {timeAgo(a.created_at, lang)}
+              </span>
+            </div>
+          ))}
+        </Card>
+      )}
+
       {/* Members card */}
       <Card style={{ marginBottom: 16 }}>
         <Label style={{ marginBottom: 12 }}>{t.membersTitle}</Label>
@@ -183,6 +240,31 @@ export default function HouseholdScreen() {
       </div>{/* /content wrapper */}
     </div>
   )
+}
+
+function StatBox({ value, label, color, bg }) {
+  return (
+    <div style={{
+      background: bg, borderRadius: 'var(--radius-tile)', padding: '12px 8px',
+      textAlign: 'center',
+    }}>
+      <div style={{ fontSize: 22, fontWeight: 800, color, fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
+        {value}
+      </div>
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-ink-soft)', marginTop: 2 }}>
+        {label}
+      </div>
+    </div>
+  )
+}
+
+function timeAgo(iso, lang) {
+  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000))
+  if (mins < 60) return `${mins}m`
+  const hours = Math.round(mins / 60)
+  if (hours < 24) return `${hours}h`
+  const days = Math.round(hours / 24)
+  return `${days}d`
 }
 
 function Card({ children, style = {} }) {

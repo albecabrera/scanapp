@@ -40,6 +40,7 @@ export default function TabBar({ activeTab, onTabChange, t }) {
       height: 88, boxSizing: 'border-box',
     }}>
       {tab('inventory', 'basket', t.tabs.inventory)}
+      {tab('shopping', 'cart', t.tabs.shopping)}
 
       {/* Raised scan button */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>

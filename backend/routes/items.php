@@ -24,10 +24,12 @@ function items_list(array $session, int $hid): void {
     $stmt = $db->prepare("
         SELECT i.*,
                a.id as ab_id, a.display_name as ab_name, a.avatar_index as ab_av,
-               s.id as as_id, s.display_name as as_name, s.avatar_index as as_av
+               s.id as as_id, s.display_name as as_name, s.avatar_index as as_av,
+               p.image_url as p_image, p.brand as p_brand
         FROM inventory_items i
         JOIN  users a ON a.id = i.added_by
         LEFT JOIN users s ON s.id = i.assigned_to
+        LEFT JOIN products p ON p.ean = i.ean AND i.ean != ''
         WHERE $w ORDER BY $sort
     ");
     $stmt->execute($params);
@@ -43,16 +45,6 @@ function item_create(array $session, int $hid): void {
     $ean   = trim($b['ean'] ?? '');
     $tile  = $ean !== '' ? (abs(crc32($ean)) % 6) : random_int(0, 5);
 
-    // Fetch brand/image from products cache if EAN provided
-    $brand = '';
-    $img   = '';
-    if ($ean !== '') {
-        $ps = $db->prepare("SELECT name, brand, image_url FROM products WHERE ean = ?");
-        $ps->execute([$ean]);
-        $pd = $ps->fetch();
-        if ($pd) { $brand = $pd['brand']; $img = $pd['image_url']; }
-    }
-
     $db->prepare("
         INSERT INTO inventory_items (household_id, ean, name, location, expires_at, quantity, tile_index, added_by, assigned_to)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -67,10 +59,9 @@ function item_create(array $session, int $hid): void {
     ]);
     $id = (int)$db->lastInsertId();
 
-    $item = fetch_item($db, $id);
-    $item['brand']     = $brand;
-    $item['image_url'] = $img;
-    json_ok($item, 201);
+    log_activity($db, $hid, (int)$session['sub'], $b['name'], 'added', (int)($b['quantity'] ?? 1));
+
+    json_ok(fetch_item($db, $id), 201);
 }
 
 function item_update(array $session, int $hid, int $iid): void {
@@ -91,24 +82,37 @@ function item_update(array $session, int $hid, int $iid): void {
 function item_consume(array $session, int $hid, int $iid): void {
     $db = db();
     membership_required($db, $hid, $session['sub']);
-    $stmt = $db->prepare("SELECT quantity FROM inventory_items WHERE id = ? AND household_id = ?");
+    $stmt = $db->prepare("SELECT name, quantity FROM inventory_items WHERE id = ? AND household_id = ?");
     $stmt->execute([$iid, $hid]);
     $row = $stmt->fetch();
     if (!$row) json_err('Item not found', 'NOT_FOUND', 404);
 
+    log_activity($db, $hid, (int)$session['sub'], $row['name'], 'consumed', 1);
+
     $newQty = (int)$row['quantity'] - 1;
     if ($newQty <= 0) {
         $db->prepare("DELETE FROM inventory_items WHERE id = ?")->execute([$iid]);
-        json_ok(['id' => $iid, 'quantity' => 0, 'deleted' => true]);
+        json_ok(['id' => $iid, 'quantity' => 0, 'deleted' => true, 'name' => $row['name']]);
     } else {
         $db->prepare("UPDATE inventory_items SET quantity = ? WHERE id = ?")->execute([$newQty, $iid]);
-        json_ok(['id' => $iid, 'quantity' => $newQty, 'deleted' => false]);
+        json_ok(['id' => $iid, 'quantity' => $newQty, 'deleted' => false, 'name' => $row['name']]);
     }
 }
 
 function item_delete(array $session, int $hid, int $iid): void {
     $db = db();
     membership_required($db, $hid, $session['sub']);
+
+    $stmt = $db->prepare("SELECT name, quantity, expires_at FROM inventory_items WHERE id = ? AND household_id = ?");
+    $stmt->execute([$iid, $hid]);
+    $row = $stmt->fetch();
+
+    if ($row) {
+        // Expired at deletion time = food waste; otherwise a plain removal
+        $wasted = $row['expires_at'] !== null && $row['expires_at'] < date('Y-m-d');
+        log_activity($db, $hid, (int)$session['sub'], $row['name'], $wasted ? 'wasted' : 'removed', (int)$row['quantity']);
+    }
+
     $db->prepare("DELETE FROM inventory_items WHERE id = ? AND household_id = ?")->execute([$iid, $hid]);
     http_response_code(204); exit;
 }
@@ -117,10 +121,12 @@ function fetch_item(PDO $db, int $id): array {
     $stmt = $db->prepare("
         SELECT i.*,
                a.id as ab_id, a.display_name as ab_name, a.avatar_index as ab_av,
-               s.id as as_id, s.display_name as as_name, s.avatar_index as as_av
+               s.id as as_id, s.display_name as as_name, s.avatar_index as as_av,
+               p.image_url as p_image, p.brand as p_brand
         FROM inventory_items i
         JOIN  users a ON a.id = i.added_by
         LEFT JOIN users s ON s.id = i.assigned_to
+        LEFT JOIN products p ON p.ean = i.ean AND i.ean != ''
         WHERE i.id = ?
     ");
     $stmt->execute([$id]);
@@ -133,8 +139,8 @@ function item_to_obj(array $r): array {
         'id'          => (int)$r['id'],
         'ean'         => $r['ean'],
         'name'        => $r['name'],
-        'brand'       => '',
-        'image_url'   => '',
+        'brand'       => $r['p_brand'] ?? '',
+        'image_url'   => $r['p_image'] ?? '',
         'location'    => $r['location'],
         'expires_at'  => $r['expires_at'],
         'quantity'    => (int)$r['quantity'],

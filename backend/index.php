@@ -29,6 +29,8 @@ switch ($seg[0]) {
         require_once __DIR__ . '/routes/households.php';
         require_once __DIR__ . '/routes/items.php';
         require_once __DIR__ . '/routes/notifications.php';
+        require_once __DIR__ . '/routes/shopping.php';
+        require_once __DIR__ . '/routes/stats.php';
         route_households($seg, $method);
         break;
 

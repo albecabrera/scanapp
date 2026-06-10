@@ -16,6 +16,9 @@ const PATHS = {
   clock: <g fill="none" strokeWidth="1.7" strokeLinecap="round"><circle cx="12" cy="12" r="8.2" /><path d="M12 7.5V12l3 2.5" /></g>,
   gear: <g fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3.2" /><path d="M12 3.6l1 2.3 2.5-.5 1.5 2 2.3 1-.5 2.6 1.7 1.9-1.7 1.9.5 2.6-2.3 1-1.5 2-2.5-.5-1 2.3-1-2.3-2.5.5-1.5-2-2.3-1 .5-2.6L3.5 13l1.7-1.9-.5-2.6 2.3-1 1.5-2 2.5.5 1-2.3Z" /></g>,
   user: <g fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" /></g>,
+  cart: <g fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3.5 4.5h2l2.2 11a1.5 1.5 0 0 0 1.5 1.2h8.4a1.5 1.5 0 0 0 1.5-1.2l1.4-7H6.5" /><circle cx="9.5" cy="20" r="1.4" /><circle cx="17.5" cy="20" r="1.4" /></g>,
+  search: <g fill="none" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></g>,
+  chart: <g fill="none" strokeWidth="1.8" strokeLinecap="round"><path d="M5 19.5v-7M12 19.5v-13M19 19.5v-4" /></g>,
 }
 
 export default function Icon({ name, size = 22, color = 'currentColor', style }) {

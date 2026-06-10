@@ -14,6 +14,7 @@ const OnboardingScreen = lazy(() => import('./screens/OnboardingScreen'))
 const InventoryScreen = lazy(() => import('./screens/InventoryScreen'))
 const ScanScreen = lazy(() => import('./screens/ScanScreen'))
 const HouseholdScreen = lazy(() => import('./screens/HouseholdScreen'))
+const ShoppingScreen = lazy(() => import('./screens/ShoppingScreen'))
 
 // Preload scan chunk (ZXing) during idle so the camera opens instantly
 function preloadScan() {
@@ -170,6 +171,20 @@ export default function App() {
               </Suspense>
             </div>
           )}
+
+          {/* Shopping list */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            opacity: activeTab === 'shopping' ? 1 : 0,
+            pointerEvents: activeTab === 'shopping' ? 'auto' : 'none',
+            overflowY: 'auto',
+            transition: 'opacity 0.4s var(--ease-spring)',
+            transform: activeTab === 'shopping' ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.992)',
+          }}>
+            <Suspense fallback={null}>
+              <ShoppingScreen />
+            </Suspense>
+          </div>
 
           {/* Household */}
           <div style={{

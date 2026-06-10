@@ -27,10 +27,18 @@ export default function ProductDetailSheet({ open, itemId, onClose, t }) {
       if (res.deleted) {
         removeItem(item.id)
         onClose()
+        // Last unit gone → auto-add to shopping list
+        try {
+          await api.shopping.add(activeHouseholdId, { name: item.name, ean: item.ean || '' })
+          window.dispatchEvent(new CustomEvent('ss-shopping-changed'))
+          addToast(t?.shop?.autoAdded?.(item.name) ?? `${item.name} → compras`)
+        } catch {
+          addToast(t?.toast?.consumed ?? 'Consumido')
+        }
       } else {
         upsertItem({ id: item.id, quantity: res.quantity })
+        addToast(t?.toast?.consumed ?? 'Consumido')
       }
-      addToast(t?.toast?.consumed ?? 'Consumido')
     } catch {
       upsertItem(snapshot)
       addToast(t?.toast?.error ?? 'Error')
@@ -55,7 +63,7 @@ export default function ProductDetailSheet({ open, itemId, onClose, t }) {
     <Sheet open={open} onClose={onClose}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
-        <Tile label={item.name} tileIndex={item.tile_index} size={54} />
+        <Tile label={item.name} tileIndex={item.tile_index} size={54} imageUrl={item.image_url} />
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--color-ink)', marginBottom: 4 }}>
             {item.name}

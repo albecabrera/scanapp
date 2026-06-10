@@ -81,4 +81,14 @@ export const api = {
     subscribe:   (body) => request('POST', '/push/subscribe', body),
     unsubscribe: (body) => request('DELETE', '/push/subscribe', body),
   },
+  shopping: {
+    list:         (hid)       => request('GET', `/households/${hid}/shopping`),
+    add:          (hid, body) => request('POST', `/households/${hid}/shopping`, body),
+    update:       (hid, id, body) => request('PATCH', `/households/${hid}/shopping/${id}`, body),
+    delete:       (hid, id)   => request('DELETE', `/households/${hid}/shopping/${id}`),
+    clearChecked: (hid)       => request('POST', `/households/${hid}/shopping/clear-checked`),
+  },
+  stats: {
+    get: (hid) => request('GET', `/households/${hid}/stats`),
+  },
 }

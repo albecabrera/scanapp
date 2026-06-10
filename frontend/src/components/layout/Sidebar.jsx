@@ -72,6 +72,7 @@ export default function Sidebar({ activeTab, onTabChange, t, collapsed }) {
       <nav style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {[
           { key: 'inventory', icon: 'basket', label: t.tabs.inventory },
+          { key: 'shopping',  icon: 'cart',   label: t.tabs.shopping },
           { key: 'home',      icon: 'home',   label: t.tabs.home },
         ].map(({ key, icon, label }) => {
           const active = activeTab === key

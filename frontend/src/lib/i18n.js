@@ -1,7 +1,40 @@
 export const translations = {
   es: {
     langName: 'Español',
-    tabs: { inventory: 'Inventario', scan: 'Escanear', home: 'Hogar' },
+    tabs: { inventory: 'Inventario', scan: 'Escanear', home: 'Hogar', shopping: 'Compras' },
+    shop: {
+      title: 'Lista de compras',
+      placeholder: 'Agregar producto…',
+      add: 'Agregar',
+      empty: 'Lista vacía',
+      emptyHint: 'Lo que se acaba aparece acá automáticamente',
+      clearChecked: 'Quitar comprados',
+      pending: (n) => `${n} pendientes`,
+      autoAdded: (name) => `${name} → lista de compras`,
+    },
+    stats: {
+      title: 'Este mes',
+      consumed: 'Consumidos',
+      wasted: 'Desperdiciados',
+      added: 'Agregados',
+      noData: 'Aún sin actividad este mes',
+    },
+    activity: {
+      title: 'Actividad reciente',
+      added: 'agregó',
+      consumed: 'consumió',
+      wasted: 'dejó vencer',
+      removed: 'eliminó',
+      empty: 'Sin actividad todavía',
+    },
+    recipes: {
+      title: 'Ideas para aprovechar',
+      with: 'Con:',
+    },
+    expiryChips: {
+      suggested: 'Sugerido',
+      days: (n) => n >= 30 ? `${Math.round(n / 30)} m` : `${n} d`,
+    },
     inv: {
       title: 'Inventario',
       summary: (n, e) => `${n} productos · ${e} vencen pronto`,
@@ -12,6 +45,8 @@ export const translations = {
       sections: { fridge: 'Nevera', freezer: 'Congelador', pantry: 'Despensa' },
       empty: 'Sin productos aquí',
       emptyHint: 'Escaneá un código de barras para agregar',
+      search: 'Buscar productos…',
+      noResults: 'Nada coincide con la búsqueda',
     },
     days: {
       today: 'Hoy',
@@ -125,7 +160,40 @@ export const translations = {
 
   de: {
     langName: 'Deutsch',
-    tabs: { inventory: 'Vorräte', scan: 'Scannen', home: 'Haushalt' },
+    tabs: { inventory: 'Vorräte', scan: 'Scannen', home: 'Haushalt', shopping: 'Einkauf' },
+    shop: {
+      title: 'Einkaufsliste',
+      placeholder: 'Produkt hinzufügen…',
+      add: 'Hinzufügen',
+      empty: 'Liste leer',
+      emptyHint: 'Aufgebrauchtes landet automatisch hier',
+      clearChecked: 'Gekauftes entfernen',
+      pending: (n) => `${n} offen`,
+      autoAdded: (name) => `${name} → Einkaufsliste`,
+    },
+    stats: {
+      title: 'Dieser Monat',
+      consumed: 'Verbraucht',
+      wasted: 'Verschwendet',
+      added: 'Hinzugefügt',
+      noData: 'Noch keine Aktivität diesen Monat',
+    },
+    activity: {
+      title: 'Letzte Aktivität',
+      added: 'hat hinzugefügt:',
+      consumed: 'hat verbraucht:',
+      wasted: 'ließ ablaufen:',
+      removed: 'hat entfernt:',
+      empty: 'Noch keine Aktivität',
+    },
+    recipes: {
+      title: 'Ideen zum Aufbrauchen',
+      with: 'Mit:',
+    },
+    expiryChips: {
+      suggested: 'Vorschlag',
+      days: (n) => n >= 30 ? `${Math.round(n / 30)} M` : `${n} T`,
+    },
     inv: {
       title: 'Vorräte',
       summary: (n, e) => `${n} Produkte · ${e} laufen bald ab`,
@@ -136,6 +204,8 @@ export const translations = {
       sections: { fridge: 'Kühlschrank', freezer: 'Gefrierfach', pantry: 'Vorratsschrank' },
       empty: 'Keine Produkte',
       emptyHint: 'Scanne einen Barcode zum Hinzufügen',
+      search: 'Produkte suchen…',
+      noResults: 'Keine Treffer',
     },
     days: {
       today: 'Heute',

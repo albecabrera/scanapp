@@ -3,6 +3,7 @@ import { api } from '../lib/api'
 import { useStore } from '../lib/store'
 import { useT } from '../lib/i18n'
 import { startCamera, stopCamera, startScan, requestCameraPermission, toggleTorch } from '../lib/scanner'
+import { expiryChips } from '../lib/expirySuggest'
 import Icon from '../components/atoms/Icon'
 import Tile from '../components/atoms/Tile'
 
@@ -374,6 +375,25 @@ function AddItemForm({ product, manualName, setManualName, location, setLocation
               fontFamily: 'var(--font-body)', outline: 'none', boxSizing: 'border-box',
             }}
           />
+          {/* Quick date suggestions — smart by category, then standard offsets */}
+          <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+            {expiryChips(manualName).map(chip => {
+              const active = expiresAt === chip.date
+              return (
+                <button key={chip.days} onClick={() => setExpiresAt(active ? '' : chip.date)} style={{
+                  borderRadius: 'var(--radius-chip)', padding: '5px 11px',
+                  fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                  fontFamily: 'var(--font-body)',
+                  background: active ? 'var(--color-primary)' : chip.suggested ? 'var(--color-primary-tint)' : 'var(--color-surface2)',
+                  color: active ? 'var(--color-on-primary)' : chip.suggested ? 'var(--color-primary)' : 'var(--color-ink-soft)',
+                  border: chip.suggested && !active ? '1px solid var(--color-primary)' : '1px solid transparent',
+                  transition: 'background 0.2s, color 0.2s',
+                }}>
+                  {chip.suggested ? '✨ ' : ''}{t.expiryChips.days(chip.days)}
+                </button>
+              )
+            })}
+          </div>
         </div>
         <div>
           <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-ink-soft)', display: 'block', marginBottom: 6 }}>

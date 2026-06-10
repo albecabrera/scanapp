@@ -4,6 +4,7 @@ import { useStore, getActiveHousehold } from '../lib/store'
 import { useT } from '../lib/i18n'
 import { setCachedItems } from '../lib/idb'
 import { daysUntil, expiryKind, expiryLabel, countExpiringSoon } from '../lib/expiry'
+import { matchRecipes } from '../lib/recipes'
 import { getInstallPrompt, clearInstallPrompt } from '../main'
 import Icon from '../components/atoms/Icon'
 import Avatar, { AvatarStack } from '../components/atoms/Avatar'
@@ -33,6 +34,7 @@ export default function InventoryScreen({ onOpenScan }) {
   const [refreshing, setRefreshing] = useState(false)
   const [pullY, setPullY] = useState(0)
   const [installable, setInstallable] = useState(false)
+  const [query, setQuery] = useState('')
   const scrollRef = useRef()
   const touchStart = useRef(null)
 
@@ -100,7 +102,10 @@ export default function InventoryScreen({ onOpenScan }) {
   })
 
   const LOCATIONS = ['fridge', 'freezer', 'pantry']
-  const filtered = locationFilter === 'all' ? items : items.filter(i => i.location === locationFilter)
+  const q = query.trim().toLowerCase()
+  const filtered = items
+    .filter(i => locationFilter === 'all' || i.location === locationFilter)
+    .filter(i => !q || i.name.toLowerCase().includes(q) || (i.brand ?? '').toLowerCase().includes(q) || (i.ean ?? '').includes(q))
   const grouped = LOCATIONS.reduce((acc, loc) => {
     const group = filtered.filter(i => i.location === loc)
     if (group.length) acc.push({ loc, items: group })
@@ -108,6 +113,7 @@ export default function InventoryScreen({ onOpenScan }) {
   }, [])
 
   const soonCount = countExpiringSoon(items)
+  const recipes = matchRecipes(soonItems, lang)
 
   return (
     <div
@@ -191,6 +197,35 @@ export default function InventoryScreen({ onOpenScan }) {
         <p style={{ fontSize: 14, color: 'var(--color-ink-soft)', margin: 0 }}>
           {t.inv.summary(items.length, soonCount)}
         </p>
+
+        {/* Search */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, marginTop: 14,
+          background: 'var(--color-surface)', border: '1.5px solid var(--color-border)',
+          borderRadius: 'var(--radius-chip)', padding: '0 16px', height: 44,
+          boxShadow: 'var(--shadow-xs)',
+        }}>
+          <Icon name="search" size={17} color="var(--color-ink-faint)" />
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder={t.inv.search}
+            style={{
+              flex: 1, border: 'none', outline: 'none', background: 'none',
+              fontSize: 14.5, color: 'var(--color-ink)', fontFamily: 'var(--font-body)',
+              height: '100%',
+            }}
+          />
+          {query && (
+            <button onClick={() => setQuery('')} style={{
+              background: 'var(--color-surface2)', border: 'none', cursor: 'pointer',
+              width: 22, height: 22, borderRadius: '50%', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', padding: 0,
+            }}>
+              <Icon name="x" size={11} color="var(--color-ink-soft)" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* PWA install banner */}
@@ -225,7 +260,7 @@ export default function InventoryScreen({ onOpenScan }) {
       )}
 
       {/* Expiring soon carousel */}
-      {soonItems.length > 0 && (
+      {soonItems.length > 0 && !q && (
         <div style={{ marginTop: 24 }}>
           <div style={{ padding: '0 var(--content-gutter)', marginBottom: 10 }}>
             <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--color-ink-soft)', letterSpacing: '0.08em' }}>
@@ -248,7 +283,7 @@ export default function InventoryScreen({ onOpenScan }) {
                 onPointerUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
                 onPointerLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}>
                   <div style={{ position: 'relative', marginBottom: 8, display: 'inline-block' }}>
-                    <Tile label={item.name} tileIndex={item.tile_index} size={38} />
+                    <Tile label={item.name} tileIndex={item.tile_index} size={38} imageUrl={item.image_url} />
                     <div style={{ position: 'absolute', top: -6, right: -6 }}>
                       <Badge label={expiryLabel(days, t)} kind={kind} />
                     </div>
@@ -263,6 +298,46 @@ export default function InventoryScreen({ onOpenScan }) {
               )
             })}
             <div style={{ width: 12, flexShrink: 0 }} />
+          </div>
+        </div>
+      )}
+
+      {/* Recipe ideas with expiring items */}
+      {recipes.length > 0 && !q && (
+        <div style={{ marginTop: 24, padding: '0 var(--content-gutter)' }}>
+          <div style={{ marginBottom: 10 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--color-ink-soft)', letterSpacing: '0.08em' }}>
+              {t.recipes.title.toUpperCase()}
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {recipes.map(r => (
+              <div key={r.id} className="ss-card-lift" style={{
+                display: 'flex', alignItems: 'center', gap: 14,
+                background: 'var(--color-surface)', borderRadius: 'var(--radius-card)',
+                border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-xs)',
+                padding: '12px 16px',
+              }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: 'var(--radius-tile)', flexShrink: 0,
+                  background: 'var(--color-primary-tint)', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', fontSize: 22,
+                }}>
+                  {r.emoji}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--color-ink)', marginBottom: 2 }}>
+                    {r.name}
+                  </div>
+                  <div style={{ fontSize: 12.5, color: 'var(--color-ink-soft)' }}>
+                    {r.desc}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: 'var(--color-primary)', fontWeight: 600, marginTop: 4 }}>
+                    {t.recipes.with} {r.matched.slice(0, 3).join(', ')}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -292,8 +367,10 @@ export default function InventoryScreen({ onOpenScan }) {
       <div style={{ padding: '16px var(--content-gutter) 0' }}>
         {grouped.length === 0 && (
           <div style={{ textAlign: 'center', paddingTop: 40 }}>
-            <p style={{ fontSize: 15, color: 'var(--color-ink-soft)', marginBottom: 8 }}>{t.inv.empty}</p>
-            <p style={{ fontSize: 13, color: 'var(--color-ink-faint)' }}>{t.inv.emptyHint}</p>
+            <p style={{ fontSize: 15, color: 'var(--color-ink-soft)', marginBottom: 8 }}>
+              {q ? t.inv.noResults : t.inv.empty}
+            </p>
+            {!q && <p style={{ fontSize: 13, color: 'var(--color-ink-faint)' }}>{t.inv.emptyHint}</p>}
           </div>
         )}
 
@@ -329,7 +406,7 @@ export default function InventoryScreen({ onOpenScan }) {
                       transition: 'background 0.2s',
                     }}
                   >
-                    <Tile label={item.name} tileIndex={item.tile_index} size={46} />
+                    <Tile label={item.name} tileIndex={item.tile_index} size={46} imageUrl={item.image_url} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 15.5, fontWeight: 600, color: 'var(--color-ink)', marginBottom: 2 }}>
                         {item.name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}

@@ -74,6 +74,44 @@ function route_households(array $seg, string $method): void {
         return;
     }
 
+    // /households/:id/shopping/clear-checked
+    if ($sub === 'shopping' && $sub2 === 'clear-checked') {
+        $user = auth_required();
+        if ($method !== 'POST') json_err('Method not allowed', 'METHOD_NOT_ALLOWED', 405);
+        shopping_clear_checked($user, $hid);
+        return;
+    }
+
+    // /households/:id/shopping/:sid
+    if ($sub === 'shopping' && $sub2 !== '') {
+        $user = auth_required();
+        match ($method) {
+            'PATCH'  => shopping_update($user, $hid, (int)$sub2),
+            'DELETE' => shopping_delete($user, $hid, (int)$sub2),
+            default  => json_err('Method not allowed', 'METHOD_NOT_ALLOWED', 405),
+        };
+        return;
+    }
+
+    // /households/:id/shopping
+    if ($sub === 'shopping') {
+        $user = auth_required();
+        match ($method) {
+            'GET'  => shopping_list($user, $hid),
+            'POST' => shopping_add($user, $hid),
+            default => json_err('Method not allowed', 'METHOD_NOT_ALLOWED', 405),
+        };
+        return;
+    }
+
+    // /households/:id/stats
+    if ($sub === 'stats') {
+        $user = auth_required();
+        if ($method !== 'GET') json_err('Method not allowed', 'METHOD_NOT_ALLOWED', 405);
+        stats_get($user, $hid);
+        return;
+    }
+
     // /households/:id/notifications/me
     if ($sub === 'notifications' && $sub2 === 'me') {
         $user = auth_required();
