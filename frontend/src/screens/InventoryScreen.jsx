@@ -226,9 +226,9 @@ export default function InventoryScreen({ onOpenScan }) {
 
       {/* Expiring soon carousel */}
       {soonItems.length > 0 && (
-        <div style={{ marginTop: 20 }}>
-          <div style={{ padding: '0 var(--content-gutter)', marginBottom: 12 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-ink-soft)', letterSpacing: '0.02em' }}>
+        <div style={{ marginTop: 24 }}>
+          <div style={{ padding: '0 var(--content-gutter)', marginBottom: 10 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--color-ink-soft)', letterSpacing: '0.08em' }}>
               {t.inv.soon.toUpperCase()}
             </span>
           </div>
@@ -237,9 +237,10 @@ export default function InventoryScreen({ onOpenScan }) {
               const days = daysUntil(item.expires_at)
               const kind = expiryKind(days)
               return (
-                <div key={item.id} onClick={() => openSheetWith('product-detail', item.id)} style={{
-                  flexShrink: 0, width: 128, borderRadius: 'var(--radius-card)',
+                <div key={item.id} className="ss-card-lift" onClick={() => openSheetWith('product-detail', item.id)} style={{
+                  flexShrink: 0, width: 132, borderRadius: 'var(--radius-card)',
                   background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+                  boxShadow: 'var(--shadow-xs)',
                   padding: '12px 12px 14px', cursor: 'pointer', scrollSnapAlign: 'start',
                   transition: 'transform 0.25s var(--ease-spring)',
                 }}
@@ -297,10 +298,15 @@ export default function InventoryScreen({ onOpenScan }) {
         )}
 
         {grouped.map(({ loc, items: groupItems }) => (
-          <div key={loc} style={{ marginBottom: 20 }}>
-            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-ink-soft)', letterSpacing: '0.05em', marginBottom: 8, textTransform: 'uppercase' }}>
-              {t.inv.sections[loc]}
-            </p>
+          <div key={loc} className="ss-cv-auto" style={{ marginBottom: 'var(--space-section)' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
+              <p style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--color-ink-soft)', letterSpacing: '0.08em', textTransform: 'uppercase', margin: 0 }}>
+                {t.inv.sections[loc]}
+              </p>
+              <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--color-ink-faint)' }}>
+                {groupItems.length}
+              </span>
+            </div>
             <div className="ss-item-grid" style={{
               background: 'var(--color-surface)', borderRadius: 'var(--radius-card)',
               border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)',

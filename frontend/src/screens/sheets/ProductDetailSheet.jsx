@@ -93,15 +93,15 @@ export default function ProductDetailSheet({ open, itemId, onClose, t }) {
 
       {/* Actions — disabled for pending items */}
       <button
+        className="ss-btn-primary"
         onClick={consume}
         disabled={!!item._pending}
         style={{
           width: '100%', height: 50, borderRadius: 'var(--radius-btn)',
-          background: 'var(--color-primary)', color: '#fff', border: 'none',
+          color: 'var(--color-on-primary)', border: 'none',
           fontSize: 16, fontWeight: 700, cursor: item._pending ? 'not-allowed' : 'pointer',
           marginBottom: 12, fontFamily: 'var(--font-body)',
           opacity: item._pending ? 0.5 : 1,
-          transition: 'transform 0.25s var(--ease-spring)',
         }}
         onPointerDown={e => { if (!item._pending) e.currentTarget.style.transform = 'scale(0.97)' }}
         onPointerUp={e => { e.currentTarget.style.transform = 'scale(1)' }}

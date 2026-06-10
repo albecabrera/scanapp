@@ -419,9 +419,9 @@ function AddItemForm({ product, manualName, setManualName, location, setLocation
         </div>
       )}
 
-      <button onClick={addItem} disabled={loading || !manualName.trim()} style={{
+      <button className="ss-btn-primary" onClick={addItem} disabled={loading || !manualName.trim()} style={{
         width: '100%', height: 52, borderRadius: 'var(--radius-btn)',
-        background: 'var(--color-primary)', color: '#fff', border: 'none',
+        color: 'var(--color-on-primary)', border: 'none',
         fontSize: 16, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
         fontFamily: 'var(--font-body)', opacity: (loading || !manualName.trim()) ? 0.6 : 1,
       }}>

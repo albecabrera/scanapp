@@ -15,6 +15,13 @@ const InventoryScreen = lazy(() => import('./screens/InventoryScreen'))
 const ScanScreen = lazy(() => import('./screens/ScanScreen'))
 const HouseholdScreen = lazy(() => import('./screens/HouseholdScreen'))
 
+// Preload scan chunk (ZXing) during idle so the camera opens instantly
+function preloadScan() {
+  const cb = () => import('./screens/ScanScreen').catch(() => {})
+  if ('requestIdleCallback' in window) requestIdleCallback(cb, { timeout: 4000 })
+  else setTimeout(cb, 2500)
+}
+
 export default function App() {
   const session = useStore(s => s.session)
   const setSession = useStore(s => s.setSession)
@@ -35,6 +42,7 @@ export default function App() {
 
   useEffect(() => {
     bootstrap()
+    preloadScan()
   }, [])
 
   // Refresh items when background sync completes

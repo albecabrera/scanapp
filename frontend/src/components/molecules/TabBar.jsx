@@ -46,11 +46,11 @@ export default function TabBar({ activeTab, onTabChange, t }) {
         <button
           onClick={() => onTabChange('scan')}
           style={{
-            width: 56, height: 56, borderRadius: '50%',
-            background: 'var(--color-primary)', border: 'none', cursor: 'pointer',
+            width: 58, height: 58, borderRadius: '50%',
+            background: 'var(--grad-primary)', border: 'none', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            marginTop: -20,
-            boxShadow: '0 8px 20px rgba(35,122,75,0.33)',
+            marginTop: -22,
+            boxShadow: 'var(--grad-primary-glow)',
             WebkitTapHighlightColor: 'transparent',
             transform: 'scale(1)',
             transition: 'transform 0.25s var(--ease-spring)',
