@@ -1,14 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { api } from './lib/api'
 import { useStore } from './lib/store'
 import { useT } from './lib/i18n'
-import AuthScreen from './screens/AuthScreen'
-import OnboardingScreen from './screens/OnboardingScreen'
-import InventoryScreen from './screens/InventoryScreen'
-import ScanScreen from './screens/ScanScreen'
-import HouseholdScreen from './screens/HouseholdScreen'
+import { getCachedItems, setCachedItems } from './lib/idb'
+import { scheduleLocalNotifications, requestNotificationPermission } from './lib/notifications'
 import TabBar from './components/molecules/TabBar'
 import ToastStack from './components/molecules/Toast'
+
+const AuthScreen = lazy(() => import('./screens/AuthScreen'))
+const OnboardingScreen = lazy(() => import('./screens/OnboardingScreen'))
+const InventoryScreen = lazy(() => import('./screens/InventoryScreen'))
+const ScanScreen = lazy(() => import('./screens/ScanScreen'))
+const HouseholdScreen = lazy(() => import('./screens/HouseholdScreen'))
 
 export default function App() {
   const session = useStore(s => s.session)
@@ -21,11 +24,26 @@ export default function App() {
   const activeHouseholdId = useStore(s => s.activeHouseholdId)
   const activeTab = useStore(s => s.activeTab)
   const setTab = useStore(s => s.setTab)
+  const addToast = useStore(s => s.addToast)
 
-  const [appState, setAppState] = useState('loading') // loading | auth | onboarding | app
+  const [appState, setAppState] = useState('loading')
 
   useEffect(() => {
     bootstrap()
+  }, [])
+
+  // Refresh items when background sync completes
+  useEffect(() => {
+    const handler = () => {
+      const hid = useStore.getState().activeHouseholdId
+      if (!hid) return
+      api.items.list(hid).then(r => {
+        setItems(r.items)
+        setCachedItems(hid, r.items)
+      }).catch(() => {})
+    }
+    window.addEventListener('ss-sync-done', handler)
+    return () => window.removeEventListener('ss-sync-done', handler)
   }, [])
 
   async function bootstrap() {
@@ -42,13 +60,40 @@ export default function App() {
         return
       }
       const hid = useStore.getState().activeHouseholdId ?? hhRes.households[0].id
-      const itemsRes = await api.items.list(hid)
-      setItems(itemsRes.items)
-      setAppState('app')
-    } catch {
+
+      // Load from IDB cache first (instant), then fetch in background
+      const cached = await getCachedItems(hid)
+      if (cached?.length) {
+        setItems(cached)
+        setAppState('app')
+        // Background fetch to update
+        api.items.list(hid).then(r => {
+          setItems(r.items)
+          setCachedItems(hid, r.items)
+          scheduleNotifs(r.items, user.lang ?? 'de')
+        }).catch(() => {})
+      } else {
+        const itemsRes = await api.items.list(hid)
+        setItems(itemsRes.items)
+        setCachedItems(hid, itemsRes.items)
+        setAppState('app')
+        scheduleNotifs(itemsRes.items, user.lang ?? 'de')
+      }
+    } catch (err) {
+      // Offline: try loading from IDB cache
+      const hid = useStore.getState().activeHouseholdId
+      if (hid) {
+        const cached = await getCachedItems(hid)
+        if (cached) { setItems(cached); setAppState('app'); return }
+      }
       localStorage.removeItem('ss_token')
       setAppState('auth')
     }
+  }
+
+  async function scheduleNotifs(items, lang) {
+    const granted = await requestNotificationPermission()
+    if (granted) scheduleLocalNotifications(items, t)
   }
 
   function onAuth() {
@@ -67,8 +112,18 @@ export default function App() {
   }, [session?.id])
 
   if (appState === 'loading') return <Splash />
-  if (appState === 'auth') return <AuthScreen onAuth={onAuth} />
-  if (appState === 'onboarding') return <OnboardingScreen onDone={onOnboardingDone} />
+
+  if (appState === 'auth') return (
+    <Suspense fallback={<Splash />}>
+      <AuthScreen onAuth={onAuth} />
+    </Suspense>
+  )
+
+  if (appState === 'onboarding') return (
+    <Suspense fallback={<Splash />}>
+      <OnboardingScreen onDone={onOnboardingDone} />
+    </Suspense>
+  )
 
   return (
     <div style={{
@@ -84,12 +139,16 @@ export default function App() {
           transition: 'opacity 0.4s var(--ease-spring)',
           transform: activeTab === 'inventory' ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.992)',
         }}>
-          <InventoryScreen />
+          <Suspense fallback={null}>
+            <InventoryScreen />
+          </Suspense>
         </div>
 
         {activeTab === 'scan' && (
           <div style={{ position: 'absolute', inset: 0, zIndex: 10 }}>
-            <ScanScreen onItemAdded={() => setTab('inventory')} />
+            <Suspense fallback={<Splash />}>
+              <ScanScreen onItemAdded={() => setTab('inventory')} />
+            </Suspense>
           </div>
         )}
 
@@ -101,7 +160,9 @@ export default function App() {
           transition: 'opacity 0.4s var(--ease-spring)',
           transform: activeTab === 'home' ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.992)',
         }}>
-          <HouseholdScreen />
+          <Suspense fallback={null}>
+            <HouseholdScreen />
+          </Suspense>
         </div>
       </div>
 

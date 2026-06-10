@@ -4,7 +4,6 @@ import { api } from '../../lib/api'
 import Sheet from '../../components/molecules/Sheet'
 import Tile from '../../components/atoms/Tile'
 import Badge from '../../components/atoms/Badge'
-import Avatar from '../../components/atoms/Avatar'
 
 export default function ProductDetailSheet({ open, itemId, onClose, t }) {
   const items = useStore(s => s.items)
@@ -21,8 +20,9 @@ export default function ProductDetailSheet({ open, itemId, onClose, t }) {
   const dt = t?.detail ?? {}
 
   async function consume() {
+    const snapshot = { ...item }
+    upsertItem({ ...item, quantity: Math.max(0, item.quantity - 1) })
     try {
-      upsertItem({ ...item, quantity: Math.max(0, item.quantity - 1) })
       const res = await api.items.consume(activeHouseholdId, item.id)
       if (res.deleted) {
         removeItem(item.id)
@@ -32,19 +32,21 @@ export default function ProductDetailSheet({ open, itemId, onClose, t }) {
       }
       addToast(t?.toast?.consumed ?? 'Consumido')
     } catch {
-      upsertItem(item)
+      upsertItem(snapshot)
       addToast(t?.toast?.error ?? 'Error')
     }
   }
 
   async function remove() {
+    const snapshot = { ...item }
+    removeItem(item.id)
     try {
-      removeItem(item.id)
-      onClose()
       await api.items.delete(activeHouseholdId, item.id)
+      onClose()
       addToast(t?.toast?.removed ?? 'Eliminado')
     } catch {
-      upsertItem(item)
+      // Restore item and keep sheet open so user sees the failure
+      upsertItem(snapshot)
       addToast(t?.toast?.error ?? 'Error')
     }
   }
@@ -59,6 +61,11 @@ export default function ProductDetailSheet({ open, itemId, onClose, t }) {
             {item.name}
           </div>
           {item.expires_at && <Badge label={expiryLabel(days, t)} kind={kind} />}
+          {item._pending && (
+            <div style={{ fontSize: 11, color: 'var(--color-ink-soft)', marginTop: 4, fontStyle: 'italic' }}>
+              {t?.toast?.offline ?? 'Pendiente de sincronización'}
+            </div>
+          )}
         </div>
       </div>
 
@@ -84,26 +91,34 @@ export default function ProductDetailSheet({ open, itemId, onClose, t }) {
         ))}
       </div>
 
-      {/* Actions */}
-      <button onClick={consume} style={{
-        width: '100%', height: 50, borderRadius: 'var(--radius-btn)',
-        background: 'var(--color-primary)', color: '#fff', border: 'none',
-        fontSize: 16, fontWeight: 700, cursor: 'pointer', marginBottom: 12,
-        fontFamily: 'var(--font-body)',
-        transition: 'transform 0.25s var(--ease-spring)',
-      }}
-      onPointerDown={e => { e.currentTarget.style.transform = 'scale(0.97)' }}
-      onPointerUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
-      onPointerLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}>
+      {/* Actions — disabled for pending items */}
+      <button
+        onClick={consume}
+        disabled={!!item._pending}
+        style={{
+          width: '100%', height: 50, borderRadius: 'var(--radius-btn)',
+          background: 'var(--color-primary)', color: '#fff', border: 'none',
+          fontSize: 16, fontWeight: 700, cursor: item._pending ? 'not-allowed' : 'pointer',
+          marginBottom: 12, fontFamily: 'var(--font-body)',
+          opacity: item._pending ? 0.5 : 1,
+          transition: 'transform 0.25s var(--ease-spring)',
+        }}
+        onPointerDown={e => { if (!item._pending) e.currentTarget.style.transform = 'scale(0.97)' }}
+        onPointerUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
+        onPointerLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}>
         {dt.consume ?? 'Consumir 1'}
       </button>
 
-      <button onClick={remove} style={{
-        width: '100%', height: 44, borderRadius: 'var(--radius-btn)',
-        background: 'none', color: 'var(--color-danger)', border: 'none',
-        fontSize: 15, fontWeight: 600, cursor: 'pointer',
-        fontFamily: 'var(--font-body)',
-      }}>
+      <button
+        onClick={remove}
+        disabled={!!item._pending}
+        style={{
+          width: '100%', height: 44, borderRadius: 'var(--radius-btn)',
+          background: 'none', color: 'var(--color-danger)', border: 'none',
+          fontSize: 15, fontWeight: 600, cursor: item._pending ? 'not-allowed' : 'pointer',
+          fontFamily: 'var(--font-body)',
+          opacity: item._pending ? 0.5 : 1,
+        }}>
         {dt.remove ?? 'Eliminar'}
       </button>
     </Sheet>

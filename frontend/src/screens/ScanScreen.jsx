@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { api } from '../lib/api'
 import { useStore } from '../lib/store'
 import { useT } from '../lib/i18n'
-import { startCamera, stopCamera, startScan, requestCameraPermission } from '../lib/scanner'
+import { startCamera, stopCamera, startScan, requestCameraPermission, toggleTorch } from '../lib/scanner'
 import Icon from '../components/atoms/Icon'
 import Tile from '../components/atoms/Tile'
 
@@ -22,7 +22,7 @@ export default function ScanScreen({ onItemAdded }) {
   const streamRef = useRef()
   const stopScanRef = useRef()
 
-  const [phase, setPhase] = useState('scanning') // 'scanning' | 'found' | 'adding' | 'noCam'
+  const [phase, setPhase] = useState('scanning')
   const [foundEan, setFoundEan] = useState('')
   const [product, setProduct] = useState(null)
   const [manualEan, setManualEan] = useState('')
@@ -33,7 +33,8 @@ export default function ScanScreen({ onItemAdded }) {
   const [assignedTo, setAssignedTo] = useState(null)
   const [loading, setLoading] = useState(false)
   const [lookupLoading, setLookupLoading] = useState(false)
-  const [cameraError, setCameraError] = useState(false)
+  const [torchOn, setTorchOn] = useState(false)
+  const [torchSupported, setTorchSupported] = useState(false)
 
   useEffect(() => {
     initCamera()
@@ -46,10 +47,13 @@ export default function ScanScreen({ onItemAdded }) {
       if (!permitted) { setPhase('noCam'); return }
       const stream = await startCamera(videoRef.current)
       streamRef.current = stream
+      // Check torch support
+      const track = stream.getVideoTracks()[0]
+      const caps = track?.getCapabilities?.()
+      if (caps?.torch) setTorchSupported(true)
       const stop = await startScan(videoRef.current, handleFound)
       stopScanRef.current = stop
     } catch {
-      setCameraError(true)
       setPhase('noCam')
     }
   }
@@ -57,6 +61,12 @@ export default function ScanScreen({ onItemAdded }) {
   function cleanup() {
     stopScanRef.current?.()
     stopCamera(streamRef.current)
+  }
+
+  async function handleTorch() {
+    const next = !torchOn
+    const ok = await toggleTorch(streamRef.current, next)
+    if (ok) setTorchOn(next)
   }
 
   const handleFound = useCallback(async (ean) => {
@@ -106,8 +116,26 @@ export default function ScanScreen({ onItemAdded }) {
       setTimeout(() => setNewItemId(null), 2200)
       addToast(t.toast.added)
       onItemAdded()
-    } catch {
-      addToast(t.toast.error)
+    } catch (err) {
+      if (err.offline) {
+        // Queued for sync — optimistically add with temp id
+        const tempItem = {
+          id: `pending-${Date.now()}`,
+          name: manualName.trim(),
+          ean: foundEan || '',
+          location,
+          expires_at: expiresAt || null,
+          quantity,
+          tile_index: 0,
+          household_id: activeHouseholdId,
+          _pending: true,
+        }
+        upsertItem(tempItem)
+        addToast(t.toast.offline ?? 'Sin conexión — cambios pendientes')
+        onItemAdded()
+      } else {
+        addToast(t.toast.error)
+      }
     } finally {
       setLoading(false)
     }
@@ -153,7 +181,7 @@ export default function ScanScreen({ onItemAdded }) {
           </button>
         </div>
 
-        {phase === 'noCam' && product && <AddItemForm {...{ product, manualName, setManualName, location, setLocation, expiresAt, setExpiresAt, quantity, setQuantity, assignedTo, setAssignedTo, members: hh?.members ?? [], ts, t, addItem, loading }} />}
+        {product && <AddItemForm {...{ product, manualName, setManualName, location, setLocation, expiresAt, setExpiresAt, quantity, setQuantity, assignedTo, setAssignedTo, members: hh?.members ?? [], ts, t, addItem, loading }} />}
       </div>
     )
   }
@@ -161,14 +189,12 @@ export default function ScanScreen({ onItemAdded }) {
   // ── Camera view ────────────────────────────────────────────────────────────
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'var(--cam-bg)' }}>
-      {/* Video */}
       <video ref={videoRef} playsInline muted style={{
         position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
         opacity: phase === 'scanning' ? 1 : 0.4,
         transition: 'opacity 0.3s',
       }} />
 
-      {/* Gradient overlay */}
       <div style={{
         position: 'absolute', inset: 0,
         background: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 30%, transparent 60%, rgba(0,0,0,0.6) 100%)',
@@ -177,7 +203,13 @@ export default function ScanScreen({ onItemAdded }) {
       {/* Top buttons */}
       <div style={{ position: 'absolute', top: 60, left: 20, right: 20, display: 'flex', justifyContent: 'space-between' }}>
         <GlassBtn icon="x" onClick={onItemAdded} />
-        <GlassBtn icon="flash" onClick={() => {}} />
+        {torchSupported && (
+          <GlassBtn
+            icon="flash"
+            onClick={handleTorch}
+            active={torchOn}
+          />
+        )}
       </div>
 
       {/* Viewfinder */}
@@ -187,7 +219,6 @@ export default function ScanScreen({ onItemAdded }) {
           transform: 'translate(-50%, -50%)',
           width: 252, height: 150,
         }}>
-          {/* Corners */}
           {[['top', 'left'], ['top', 'right'], ['bottom', 'left'], ['bottom', 'right']].map(([v, h]) => (
             <div key={`${v}${h}`} style={{
               position: 'absolute', [v]: 0, [h]: 0,
@@ -201,7 +232,6 @@ export default function ScanScreen({ onItemAdded }) {
                 : h === 'left' && v === 'bottom' ? '0 0 0 3px' : '0 0 3px 0',
             }} />
           ))}
-          {/* Scan line */}
           <div style={{
             position: 'absolute', left: 8, right: 8, height: 2,
             background: 'var(--scan-line-color)',
@@ -244,7 +274,6 @@ export default function ScanScreen({ onItemAdded }) {
         </div>
       )}
 
-      {/* Hint */}
       {phase === 'scanning' && (
         <p style={{
           position: 'absolute', bottom: 110, left: 0, right: 0, textAlign: 'center',
@@ -257,15 +286,17 @@ export default function ScanScreen({ onItemAdded }) {
   )
 }
 
-function GlassBtn({ icon, onClick }) {
+function GlassBtn({ icon, onClick, active = false }) {
   return (
     <button onClick={onClick} style={{
       width: 44, height: 44, borderRadius: '50%',
-      background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(14px)',
-      border: '0.5px solid rgba(255,255,255,0.3)',
+      background: active ? 'rgba(255,220,50,0.35)' : 'rgba(255,255,255,0.18)',
+      backdropFilter: 'blur(14px)',
+      border: active ? '0.5px solid rgba(255,220,50,0.7)' : '0.5px solid rgba(255,255,255,0.3)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+      transition: 'background 0.2s, border-color 0.2s',
     }}>
-      <Icon name={icon} size={20} color="#fff" />
+      <Icon name={icon} size={20} color={active ? '#FFE040' : '#fff'} />
     </button>
   )
 }
@@ -273,7 +304,6 @@ function GlassBtn({ icon, onClick }) {
 function AddItemForm({ product, manualName, setManualName, location, setLocation, expiresAt, setExpiresAt, quantity, setQuantity, assignedTo, setAssignedTo, members, ts, t, addItem, loading }) {
   return (
     <div>
-      {/* Product header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
         <div style={{
           width: 54, height: 54, borderRadius: 'var(--radius-tile)',
@@ -302,7 +332,6 @@ function AddItemForm({ product, manualName, setManualName, location, setLocation
         </div>
       </div>
 
-      {/* Location segmented control */}
       <div style={{ marginBottom: 16 }}>
         <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-ink-soft)', display: 'block', marginBottom: 8 }}>
           {ts.location}
@@ -329,7 +358,6 @@ function AddItemForm({ product, manualName, setManualName, location, setLocation
         </div>
       </div>
 
-      {/* Expiry + Quantity */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
         <div>
           <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-ink-soft)', display: 'block', marginBottom: 6 }}>
@@ -367,7 +395,6 @@ function AddItemForm({ product, manualName, setManualName, location, setLocation
         </div>
       </div>
 
-      {/* Assignees */}
       {members.length > 0 && (
         <div style={{ marginBottom: 20 }}>
           <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-ink-soft)', display: 'block', marginBottom: 8 }}>
@@ -392,7 +419,6 @@ function AddItemForm({ product, manualName, setManualName, location, setLocation
         </div>
       )}
 
-      {/* CTA */}
       <button onClick={addItem} disabled={loading || !manualName.trim()} style={{
         width: '100%', height: 52, borderRadius: 'var(--radius-btn)',
         background: 'var(--color-primary)', color: '#fff', border: 'none',

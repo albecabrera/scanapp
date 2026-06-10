@@ -129,6 +129,10 @@ input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.6; }
   to   { stroke-dashoffset: 0; }
 }
 
+@keyframes ss-spin {
+  to { transform: rotate(360deg); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

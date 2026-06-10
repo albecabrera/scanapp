@@ -13,6 +13,17 @@ export function stopCamera(stream) {
   stream?.getTracks().forEach(t => t.stop())
 }
 
+export async function toggleTorch(stream, on) {
+  const track = stream?.getVideoTracks()[0]
+  if (!track) return false
+  try {
+    await track.applyConstraints({ advanced: [{ torch: on }] })
+    return true
+  } catch {
+    return false
+  }
+}
+
 // BarcodeDetector (Chrome/Edge/Safari 17+)
 async function startNativeScan(videoEl, onFound) {
   const supported = await BarcodeDetector.getSupportedFormats()
@@ -39,7 +50,7 @@ async function startNativeScan(videoEl, onFound) {
 async function startZXingScan(videoEl, onFound) {
   const { BrowserMultiFormatReader } = await import('@zxing/browser')
   const reader = new BrowserMultiFormatReader()
-  const controls = await reader.decodeFromVideoDevice(null, videoEl, (result, err) => {
+  const controls = await reader.decodeFromVideoDevice(null, videoEl, (result) => {
     if (result) onFound(result.getText())
   })
   return () => controls.stop()

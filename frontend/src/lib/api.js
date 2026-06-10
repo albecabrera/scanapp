@@ -1,25 +1,44 @@
+import { enqueue } from './idb'
+
 const BASE = '/api/v1'
 
 function token() {
   return localStorage.getItem('ss_token')
 }
 
+// Operations that can be queued for offline replay
+const QUEUEABLE = ['POST', 'PATCH', 'DELETE']
+
 async function request(method, path, body = null) {
   const headers = { 'Content-Type': 'application/json' }
   const t = token()
   if (t) headers['Authorization'] = `Bearer ${t}`
 
-  const res = await fetch(`${BASE}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : null,
-  })
+  try {
+    const res = await fetch(`${BASE}${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : null,
+    })
 
-  if (res.status === 204) return null
+    if (res.status === 204) return null
 
-  const data = await res.json()
-  if (!res.ok) throw Object.assign(new Error(data.error ?? 'Request failed'), { code: data.code, status: res.status })
-  return data
+    const data = await res.json()
+    if (!res.ok) throw Object.assign(new Error(data.error ?? 'Request failed'), { code: data.code, status: res.status })
+    return data
+  } catch (err) {
+    // Network error (offline) — queue write operations for later sync
+    if (!navigator.onLine && QUEUEABLE.includes(method) && err instanceof TypeError) {
+      await enqueue({ method, url: BASE + path, body, headers, queuedAt: Date.now() })
+      try {
+        const sw = await navigator.serviceWorker.ready
+        await sw.sync.register('ss-sync')
+      } catch {}
+      const offlineErr = Object.assign(new Error('offline'), { offline: true })
+      throw offlineErr
+    }
+    throw err
+  }
 }
 
 export const api = {

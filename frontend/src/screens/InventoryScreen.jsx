@@ -1,14 +1,18 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { api } from '../lib/api'
 import { useStore, getActiveHousehold } from '../lib/store'
 import { useT } from '../lib/i18n'
+import { setCachedItems } from '../lib/idb'
 import { daysUntil, expiryKind, expiryLabel, countExpiringSoon } from '../lib/expiry'
+import { getInstallPrompt, clearInstallPrompt } from '../main'
 import Icon from '../components/atoms/Icon'
 import Avatar, { AvatarStack } from '../components/atoms/Avatar'
 import Tile from '../components/atoms/Tile'
 import Badge from '../components/atoms/Badge'
 import Sheet from '../components/molecules/Sheet'
 import ProductDetailSheet from './sheets/ProductDetailSheet'
+
+const PTR_THRESHOLD = 72  // px of pull to trigger refresh
 
 export default function InventoryScreen({ onOpenScan }) {
   const lang = useStore(s => s.lang)
@@ -26,10 +30,69 @@ export default function InventoryScreen({ onOpenScan }) {
   const households = useStore(s => s.households)
   const hh = getActiveHousehold({ households, activeHouseholdId })
 
+  const [refreshing, setRefreshing] = useState(false)
+  const [pullY, setPullY] = useState(0)
+  const [installable, setInstallable] = useState(false)
+  const scrollRef = useRef()
+  const touchStart = useRef(null)
+
   useEffect(() => {
     if (!activeHouseholdId) return
-    api.items.list(activeHouseholdId).then(r => setItems(r.items)).catch(() => {})
+    api.items.list(activeHouseholdId).then(r => {
+      setItems(r.items)
+      setCachedItems(activeHouseholdId, r.items)
+    }).catch(() => {})
   }, [activeHouseholdId])
+
+  // Listen for PWA install availability
+  useEffect(() => {
+    const check = () => setInstallable(true)
+    window.addEventListener('ss-installable', check)
+    return () => window.removeEventListener('ss-installable', check)
+  }, [])
+
+  // Pull-to-refresh handlers
+  const onTouchStart = useCallback((e) => {
+    const el = scrollRef.current
+    if (el && el.scrollTop === 0) {
+      touchStart.current = e.touches[0].clientY
+    }
+  }, [])
+
+  const onTouchMove = useCallback((e) => {
+    if (touchStart.current === null) return
+    const delta = e.touches[0].clientY - touchStart.current
+    if (delta > 0 && scrollRef.current?.scrollTop === 0) {
+      setPullY(Math.min(delta * 0.45, PTR_THRESHOLD))
+    }
+  }, [])
+
+  const onTouchEnd = useCallback(async () => {
+    if (pullY >= PTR_THRESHOLD - 4 && !refreshing) {
+      setRefreshing(true)
+      setPullY(0)
+      try {
+        const r = await api.items.list(activeHouseholdId)
+        setItems(r.items)
+        setCachedItems(activeHouseholdId, r.items)
+      } catch {}
+      setRefreshing(false)
+    } else {
+      setPullY(0)
+    }
+    touchStart.current = null
+  }, [pullY, refreshing, activeHouseholdId])
+
+  async function installPWA() {
+    const prompt = getInstallPrompt()
+    if (!prompt) return
+    prompt.prompt()
+    const { outcome } = await prompt.userChoice
+    if (outcome === 'accepted') {
+      clearInstallPrompt()
+      setInstallable(false)
+    }
+  }
 
   const soonItems = items.filter(i => {
     const d = daysUntil(i.expires_at)
@@ -47,14 +110,42 @@ export default function InventoryScreen({ onOpenScan }) {
   const soonCount = countExpiringSoon(items)
 
   return (
-    <div style={{
-      minHeight: '100dvh', background: 'var(--color-bg)',
-      paddingBottom: 100, overflowY: 'auto',
-    }}>
+    <div
+      ref={scrollRef}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      style={{
+        minHeight: '100dvh', background: 'var(--color-bg)',
+        paddingBottom: 100, overflowY: 'auto',
+        transform: `translateY(${pullY}px)`,
+        transition: pullY === 0 ? 'transform 0.3s var(--ease-spring)' : 'none',
+      }}
+    >
+      {/* Pull-to-refresh indicator */}
+      {(pullY > 0 || refreshing) && (
+        <div style={{
+          position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 50, display: 'flex', alignItems: 'center', gap: 8,
+          background: 'var(--color-surface)', borderRadius: 20, padding: '6px 14px',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.12)', fontSize: 13, fontWeight: 600,
+          color: 'var(--color-primary)',
+          opacity: Math.min((pullY / PTR_THRESHOLD) * 1.2, 1),
+          transition: 'opacity 0.15s',
+        }}>
+          <div style={{
+            width: 14, height: 14, border: '2px solid var(--color-primary)',
+            borderTopColor: 'transparent', borderRadius: '50%',
+            animation: refreshing ? 'ss-spin 0.7s linear infinite' : 'none',
+            transform: refreshing ? 'none' : `rotate(${(pullY / PTR_THRESHOLD) * 360}deg)`,
+          }} />
+          {refreshing ? 'Actualizando…' : 'Soltar para actualizar'}
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ padding: '60px 20px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          {/* Household pill */}
           <button onClick={() => openSheetWith('household-switcher')} style={{
             display: 'flex', alignItems: 'center', gap: 8,
             background: 'var(--glass-bg-light)', backdropFilter: 'var(--glass-blur)',
@@ -70,7 +161,6 @@ export default function InventoryScreen({ onOpenScan }) {
             <Icon name="chevDown" size={14} color="var(--color-ink-soft)" />
           </button>
 
-          {/* Bell */}
           <button onClick={() => openSheetWith('notifications')} style={{
             width: 38, height: 38, borderRadius: 'var(--radius-chip)',
             background: 'var(--glass-bg-light)', backdropFilter: 'var(--glass-blur)',
@@ -100,10 +190,41 @@ export default function InventoryScreen({ onOpenScan }) {
         </p>
       </div>
 
+      {/* PWA install banner */}
+      {installable && (
+        <div style={{
+          margin: '16px 20px 0',
+          background: 'var(--color-primary)', borderRadius: 'var(--radius-card)',
+          padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12,
+          animation: 'ss-fadeup 0.4s var(--ease-spring) both',
+        }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>
+              {lang === 'de' ? 'App installieren' : 'Instalar la app'}
+            </div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>
+              {lang === 'de' ? 'Schneller Zugriff ohne Browser' : 'Acceso rápido sin el navegador'}
+            </div>
+          </div>
+          <button onClick={installPWA} style={{
+            background: '#fff', color: 'var(--color-primary)', border: 'none',
+            borderRadius: 'var(--radius-btn)', padding: '8px 16px',
+            fontSize: 13, fontWeight: 700, cursor: 'pointer',
+            fontFamily: 'var(--font-body)',
+          }}>
+            {lang === 'de' ? 'Installieren' : 'Instalar'}
+          </button>
+          <button onClick={() => setInstallable(false)} style={{
+            background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+            color: 'rgba(255,255,255,0.7)', fontSize: 18, lineHeight: 1,
+          }}>×</button>
+        </div>
+      )}
+
       {/* Expiring soon carousel */}
       {soonItems.length > 0 && (
         <div style={{ marginTop: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', marginBottom: 12 }}>
+          <div style={{ padding: '0 20px', marginBottom: 12 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-ink-soft)', letterSpacing: '0.02em' }}>
               {t.inv.soon.toUpperCase()}
             </span>
@@ -222,7 +343,6 @@ export default function InventoryScreen({ onOpenScan }) {
         ))}
       </div>
 
-      {/* Product Detail Sheet */}
       <ProductDetailSheet
         open={openSheet === 'product-detail'}
         itemId={activeItemId}
@@ -230,7 +350,6 @@ export default function InventoryScreen({ onOpenScan }) {
         t={t}
       />
 
-      {/* Household Switcher Sheet */}
       <HouseholdSwitcherSheet
         open={openSheet === 'household-switcher'}
         onClose={closeSheet}
@@ -252,6 +371,7 @@ function HouseholdSwitcherSheet({ open, onClose, t }) {
     try {
       const r = await api.items.list(hh.id)
       setItems(r.items)
+      setCachedItems(hh.id, r.items)
     } catch {}
   }
 
