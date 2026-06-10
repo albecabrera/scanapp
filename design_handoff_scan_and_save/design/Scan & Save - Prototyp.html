@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#237A4B" />
+<title>Scan &amp; Save — Prototyp (Fresco)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { background: #0E1411; overflow: hidden; }
+  #root { height: 100vh; display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="lib/scansave-data.js"></script>
+<script src="lib/proto-data.js"></script>
+<script src="lib/scansave-themes.js"></script>
+<script type="text/babel" src="lib/ios-frame.jsx"></script>
+<script type="text/babel" src="lib/tweaks-panel.jsx"></script>
+<script type="text/babel" src="lib/scansave-ui.jsx"></script>
+<script type="text/babel" src="lib/proto-shared.jsx"></script>
+<script type="text/babel" src="lib/proto-onboarding.jsx"></script>
+<script type="text/babel" src="lib/proto-inventory.jsx"></script>
+<script type="text/babel" src="lib/proto-scan-household.jsx"></script>
+
+<script type="text/babel">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "lang": "de",
+  "dark": false,
+  "showAddedBy": true
+}/*EDITMODE-END*/;
+
+const OB_KEY = 'ss-proto-onboarded';
+
+function App() {
+  const [tw, setTweak] = window.useTweaks(TWEAK_DEFAULTS);
+  const t = window.SS_I18N[tw.lang];
+  const T = window.SS_THEMES.fresh;
+  const C = T[tw.dark ? 'dark' : 'light'];
+
+  // ── app state ──
+  const [onboarded, setOnboarded] = React.useState(() => localStorage.getItem(OB_KEY) === '1');
+  const [tab, setTab] = React.useState('inventory');
+  const [filter, setFilter] = React.useState('all');
+  const [householdKey, setHouseholdKey] = React.useState('h1');
+  const [items, setItems] = React.useState(() =>
+    window.SS_ITEMS.map((m, i) => ({ ...m, id: 'i' + i, qty: m.key === 'spag' ? 2 : 1 }))
+  );
+  const [scanIndex, setScanIndex] = React.useState(0);
+  const [newItemId, setNewItemId] = React.useState(null);
+  const [notifDays, setNotifDays] = React.useState([1, 2]);
+  const [notifyAll, setNotifyAll] = React.useState(true);
+
+  // sheets
+  const [detailId, setDetailId] = React.useState(null);
+  const [detailOpen, setDetailOpen] = React.useState(false);
+  const [selectorOpen, setSelectorOpen] = React.useState(false);
+  const [alertsOpen, setAlertsOpen] = React.useState(false);
+
+  // toast
+  const [toast, setToast] = React.useState(null);
+  const toastTimer = React.useRef(null);
+  const showToast = (label) => {
+    clearTimeout(toastTimer.current);
+    setToast({ label });
+    toastTimer.current = setTimeout(() => setToast(null), 2200);
+  };
+
+  // responsive scale of the device
+  const [scale, setScale] = React.useState(1);
+  React.useEffect(() => {
+    const fit = () => setScale(Math.min(1, (window.innerHeight - 28) / 874, (window.innerWidth - 28) / 402));
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, []);
+
+  const householdName = householdKey === 'h2' ? t.household2 : t.household;
+  const detailItem = items.find(i => i.id === detailId) || null;
+  const scanProduct = window.SS_SCAN_POOL[scanIndex % window.SS_SCAN_POOL.length];
+
+  // ── actions ──
+  const finishOnboarding = (name) => {
+    setHouseholdKey(name === t.household2 ? 'h2' : 'h1');
+    localStorage.setItem(OB_KEY, '1');
+    setOnboarded(true);
+  };
+
+  const openDetail = (item) => { setDetailId(item.id); setAlertsOpen(false); setDetailOpen(true); };
+
+  const addScanned = (prod) => {
+    const id = 'n' + Date.now();
+    setItems(prev => [{ ...prod, id }, ...prev]);
+    setScanIndex(i => i + 1);
+    setNewItemId(id);
+    setTab('inventory');
+    showToast(t.toast.added);
+  };
+
+  const consume = () => {
+    if (!detailItem) return;
+    if (detailItem.qty > 1) {
+      setItems(prev => prev.map(i => i.id === detailItem.id ? { ...i, qty: i.qty - 1 } : i));
+    } else {
+      setDetailOpen(false);
+      setItems(prev => prev.filter(i => i.id !== detailItem.id));
+    }
+    showToast(t.toast.consumed);
+  };
+
+  const removeItem = () => {
+    if (!detailItem) return;
+    setDetailOpen(false);
+    setItems(prev => prev.filter(i => i.id !== detailItem.id));
+    showToast(t.toast.removed);
+  };
+
+  const changeQty = (d) => {
+    if (!detailItem) return;
+    setItems(prev => prev.map(i => i.id === detailItem.id ? { ...i, qty: Math.max(1, i.qty + d) } : i));
+  };
+
+  const pickHousehold = (name) => {
+    const key = name === t.household2 ? 'h2' : 'h1';
+    if (key !== householdKey) { setHouseholdKey(key); showToast(t.toast.switched(name)); }
+    setSelectorOpen(false);
+  };
+
+  // tab screen visibility helper
+  const screenStyle = (key) => ({
+    position: 'absolute', inset: 0,
+    opacity: tab === key ? 1 : 0,
+    transform: tab === key ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.992)',
+    transition: `opacity 0.4s ${SS_EASE}, transform 0.5s ${SS_EASE}`,
+    pointerEvents: tab === key ? 'auto' : 'none',
+  });
+
+  const statusDark = tw.dark || (onboarded && tab === 'scan');
+
+  return (
+    <div>
+      <div style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}>
+        <IOSDevice dark={statusDark} width={402} height={874}>
+          <div style={{
+            position: 'absolute', inset: 0, background: C.bg, color: C.ink,
+            fontFamily: T.fontBody, WebkitFontSmoothing: 'antialiased', overflow: 'hidden',
+          }}>
+            {!onboarded ? (
+              <SSOnboarding T={T} C={C} t={t} dark={tw.dark} onFinish={finishOnboarding} />
+            ) : (
+              <React.Fragment>
+                {/* tab screens */}
+                <div style={screenStyle('inventory')}>
+                  <SSProtoInventory
+                    T={T} C={C} t={t} items={items} filter={filter} setFilter={setFilter}
+                    onItemTap={openDetail} showAddedBy={tw.showAddedBy}
+                    onHouseholdTap={() => setSelectorOpen(true)} onBellTap={() => setAlertsOpen(true)}
+                    householdName={householdName} newItemId={newItemId}
+                  />
+                </div>
+                <div style={screenStyle('scan')}>
+                  <SSProtoScan
+                    T={T} C={C} t={t} lang={tw.lang} active={tab === 'scan'}
+                    product={scanProduct} onAdd={addScanned} onClose={() => setTab('inventory')}
+                  />
+                </div>
+                <div style={screenStyle('home')}>
+                  <SSProtoHousehold
+                    T={T} C={C} t={t} householdName={householdName}
+                    notifDays={notifDays} setNotifDays={setNotifDays}
+                    notifyAll={notifyAll} setNotifyAll={setNotifyAll}
+                    onCopy={() => showToast(t.toast.copied)} onShare={() => {}}
+                  />
+                </div>
+
+                <SSProtoTabBar T={T} C={C} t={t} active={tab} onSelect={setTab} />
+
+                {/* sheets */}
+                <SSSheet open={detailOpen} onClose={() => setDetailOpen(false)} C={C} T={T}>
+                  <SSItemDetail T={T} C={C} t={t} lang={tw.lang} item={detailItem}
+                    onConsume={consume} onRemove={removeItem} onQty={changeQty} />
+                </SSSheet>
+                <SSSheet open={selectorOpen} onClose={() => setSelectorOpen(false)} C={C} T={T}>
+                  <SSHouseholdSelector T={T} C={C} t={t} current={householdName} onPick={pickHousehold} />
+                </SSSheet>
+                <SSSheet open={alertsOpen} onClose={() => setAlertsOpen(false)} C={C} T={T}>
+                  <SSAlertsSheet T={T} C={C} t={t} items={items} onItemTap={openDetail} />
+                </SSSheet>
+
+                <SSToast toast={toast} C={C} T={T} />
+              </React.Fragment>
+            )}
+          </div>
+        </IOSDevice>
+      </div>
+
+      <TweaksPanel>
+        <TweakSection label="Inhalt" />
+        <TweakRadio label="Sprache" value={tw.lang}
+          options={[{ value: 'de', label: 'Deutsch' }, { value: 'es', label: 'Español' }]}
+          onChange={(v) => setTweak('lang', v)} />
+        <TweakSection label="Darstellung" />
+        <TweakToggle label="Dunkelmodus" value={tw.dark} onChange={(v) => setTweak('dark', v)} />
+        <TweakToggle label={'„Hinzugefügt von“ zeigen'} value={tw.showAddedBy} onChange={(v) => setTweak('showAddedBy', v)} />
+        <TweakSection label="Demo" />
+        <TweakButton label="Onboarding neu starten" onClick={() => {
+          localStorage.removeItem(OB_KEY); setOnboarded(false); setTab('inventory');
+        }} />
+      </TweaksPanel>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

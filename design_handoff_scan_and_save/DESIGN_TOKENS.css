@@ -1,0 +1,176 @@
+/*
+ * DESIGN_TOKENS.css — Scan & Save · Designsprache "Fresco"
+ * Quelle: design/lib/scansave-themes.js → Theme "fresh"
+ * Schrift: Schibsted Grotesk (Google Fonts — muss im HTML importiert werden)
+ * Verwende: @import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap');
+ */
+
+/* ─────────────────────────── LIGHT MODE (default) ─────────────────────────── */
+:root {
+  /* Hintergrund & Oberflächen */
+  --color-bg:        #F4F6EF;
+  --color-surface:   #FFFFFF;
+  --color-surface2:  #EAEFE0;
+  --color-border:    rgba(18, 35, 25, 0.08);
+
+  /* Text */
+  --color-ink:       #122319;
+  --color-ink-soft:  rgba(18, 35, 25, 0.6);
+  --color-ink-faint: rgba(18, 35, 25, 0.38);
+
+  /* Primärfarbe */
+  --color-primary:        #237A4B;
+  --color-on-primary:     #FFFFFF;
+  --color-primary-tint:   #DCEDDD;
+
+  /* Semantisch */
+  --color-warn:       #A1700E;
+  --color-warn-bg:    #F5EAD0;
+  --color-danger:     #BC3D26;
+  --color-danger-bg:  #F8E2DB;
+
+  /* Tab-Bar Glas-Hintergrund */
+  --color-tab-bg:    rgba(255, 255, 255, 0.94);
+
+  /* Schatten */
+  --shadow-card:     0 10px 28px rgba(18, 35, 25, 0.07);
+
+  /* ── Radien ── */
+  --radius-card:     22px;
+  --radius-tile:     14px;
+  --radius-chip:     100px;   /* Pille */
+  --radius-btn:      16px;
+  --radius-seg:      12px;    /* Segmented Control */
+  --radius-sheet:    28px;    /* Bottom-Sheet oben */
+
+  /* ── Typografie ── */
+  --font-display:    'Schibsted Grotesk', system-ui, sans-serif;
+  --font-body:       'Schibsted Grotesk', system-ui, sans-serif;
+  --font-weight-display: 700;
+  --font-weight-bold:    700;
+  --font-weight-semi:    600;
+  --font-weight-normal:  400;
+  --letter-spacing-display: -0.02em;
+
+  /* ── Easing (global) ── */
+  --ease-spring:     cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* ── Liquid-Glass (blur + saturation) ── */
+  --glass-blur:         blur(14px) saturate(170%);
+  --glass-blur-tab:     blur(18px) saturate(160%);
+  --glass-bg-light:     rgba(255, 255, 255, 0.55);
+  --glass-bg-dark:      rgba(40,  52,  44,  0.55);
+  --glass-shine-light:  inset 1.5px 1.5px 1px rgba(255,255,255,0.8),
+                        inset -1px -1px 1px rgba(255,255,255,0.4);
+  --glass-shine-dark:   inset 1.5px 1.5px 1px rgba(255,255,255,0.12),
+                        inset -1px -1px 1px rgba(255,255,255,0.05);
+  --glass-border-light: 0.5px solid rgba(18,35,25,0.07);
+  --glass-border-dark:  0.5px solid rgba(255,255,255,0.14);
+
+  /* ── Kamera-Hintergrund (Scan-View) ── */
+  --cam-bg: linear-gradient(165deg, #2B362E 0%, #18211B 55%, #0E1511 100%);
+
+  /* ── Avatar-Farben (4 Slots) ── */
+  --avatar-0: #237A4B;
+  --avatar-1: #A1700E;
+  --avatar-2: #3E6B8C;
+  --avatar-3: #8C5E3E;
+
+  /* ── Produkt-Tile-Farben (6 Paletten, bg + fg) ── */
+  --tile-0-bg: #E3EEDA; --tile-0-fg: #3F6B2E;
+  --tile-1-bg: #F0E8D2; --tile-1-fg: #8A6A1F;
+  --tile-2-bg: #F4E1DA; --tile-2-fg: #A2543C;
+  --tile-3-bg: #F6E0DE; --tile-3-fg: #B04A3A;
+  --tile-4-bg: #EAE6D7; --tile-4-fg: #73683F;
+  --tile-5-bg: #F0E6CE; --tile-5-fg: #94762A;
+
+  /* ── Scan-Sucher ── */
+  --scan-line-color: #237A4B;
+  --scan-line-glow:  0 0 8px rgba(35,122,75,0.7), 0 0 16px rgba(35,122,75,0.35);
+}
+
+/* ─────────────────────────── DARK MODE ─────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg:        #0E1612;
+    --color-surface:   #172019;
+    --color-surface2:  #1F2B21;
+    --color-border:    rgba(236, 242, 236, 0.09);
+
+    --color-ink:       #ECF2EC;
+    --color-ink-soft:  rgba(236, 242, 236, 0.62);
+    --color-ink-faint: rgba(236, 242, 236, 0.38);
+
+    --color-primary:        #62C98D;
+    --color-on-primary:     #0E1612;
+    --color-primary-tint:   rgba(98, 201, 141, 0.15);
+
+    --color-warn:       #E0B35C;
+    --color-warn-bg:    rgba(224, 179, 92, 0.14);
+    --color-danger:     #E8765F;
+    --color-danger-bg:  rgba(232, 118, 95, 0.15);
+
+    --color-tab-bg:    rgba(23, 32, 25, 0.94);
+
+    --shadow-card:     0 10px 28px rgba(0, 0, 0, 0.4);
+
+    --cam-bg: linear-gradient(165deg, #232C25 0%, #131A15 55%, #0A100C 100%);
+
+    --avatar-0: #62C98D;
+    --avatar-1: #E0B35C;
+    --avatar-2: #7FAACB;
+    --avatar-3: #C99A77;
+
+    --tile-0-bg: rgba(98,201,141,0.16);  --tile-0-fg: #8FD9AE;
+    --tile-1-bg: rgba(224,179,92,0.16);  --tile-1-fg: #E5C37E;
+    --tile-2-bg: rgba(232,118,95,0.15);  --tile-2-fg: #EC9A87;
+    --tile-3-bg: rgba(232,118,95,0.13);  --tile-3-fg: #EC9A87;
+    --tile-4-bg: rgba(190,180,140,0.14); --tile-4-fg: #CFC79E;
+    --tile-5-bg: rgba(214,178,92,0.13);  --tile-5-fg: #DDC07A;
+  }
+}
+
+/* ─────────────────────────── CLASS-UTILITIES (Referenz) ─────────────────────────── */
+/* Nur als Referenz — nicht als Utility-Framework verwenden. Framework eigene Klassen nutzen. */
+
+.ss-surface   { background: var(--color-surface); }
+.ss-surface2  { background: var(--color-surface2); }
+.ss-border    { border: 1px solid var(--color-border); }
+.ss-card      { background: var(--color-surface); border-radius: var(--radius-card);
+                border: 1px solid var(--color-border); box-shadow: var(--shadow-card); }
+.ss-chip      { border-radius: var(--radius-chip); padding: 5px 12px;
+                font-family: var(--font-body); font-size: 13px; font-weight: 600; }
+.ss-ink       { color: var(--color-ink); }
+.ss-ink-soft  { color: var(--color-ink-soft); }
+.ss-primary   { color: var(--color-primary); }
+
+/* ─────────────────────────── ANIMATIONS ─────────────────────────── */
+@keyframes ss-scanline {
+  0%   { top: 12%; }
+  50%  { top: 84%; }
+  100% { top: 12%; }
+}
+@keyframes ss-pop {
+  0%   { transform: scale(0.4); opacity: 0; }
+  60%  { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes ss-fadeup {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes ss-newitem {
+  0%   { background-color: var(--color-primary-tint); }
+  100% { background-color: transparent; }
+}
+@keyframes ss-checkdraw {
+  from { stroke-dashoffset: 26; }
+  to   { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

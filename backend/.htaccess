@@ -1,0 +1,9 @@
+RewriteEngine On
+RewriteBase /scanapp/api/
+
+# Pass Authorization header (Apache strips it by default)
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# Route all v1/* requests to index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^v1/(.*)$ index.php?path=$1 [QSA,L]

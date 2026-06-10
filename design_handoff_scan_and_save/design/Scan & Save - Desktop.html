@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#237A4B" />
+<title>Scan &amp; Save — Desktop &amp; Tablet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { background: #0E1411; overflow: hidden; }
+  #root { height: 100vh; display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="lib/scansave-data.js"></script>
+<script src="lib/proto-data.js"></script>
+<script src="lib/scansave-themes.js"></script>
+<script type="text/babel" src="lib/browser-window.jsx"></script>
+<script type="text/babel" src="lib/tweaks-panel.jsx"></script>
+<script type="text/babel" src="lib/scansave-ui.jsx"></script>
+<script type="text/babel" src="lib/proto-shared.jsx"></script>
+<script type="text/babel" src="lib/proto-inventory.jsx"></script>
+<script type="text/babel" src="lib/desktop-app.jsx"></script>
+
+<script type="text/babel">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "lang": "de",
+  "dark": false,
+  "device": "desktop"
+}/*EDITMODE-END*/;
+
+function App() {
+  const [tw, setTweak] = window.useTweaks(TWEAK_DEFAULTS);
+  const t = window.SS_I18N[tw.lang];
+  const T = window.SS_THEMES.fresh;
+  const C = T[tw.dark ? 'dark' : 'light'];
+  const compact = tw.device === 'tablet';
+  const W = compact ? 1024 : 1280;
+  const H = compact ? 768 : 800;
+
+  const [view, setView] = React.useState('inventory');
+  const [filter, setFilter] = React.useState('all');
+  const [householdKey, setHouseholdKey] = React.useState('h1');
+  const [items, setItems] = React.useState(() =>
+    window.SS_ITEMS.map((m, i) => ({ ...m, id: 'i' + i, qty: m.key === 'spag' ? 2 : 1 }))
+  );
+  const [scanIndex, setScanIndex] = React.useState(0);
+  const [detailId, setDetailId] = React.useState(null);
+  const [detailOpen, setDetailOpen] = React.useState(false);
+  const [scanOpen, setScanOpen] = React.useState(false);
+  const [toast, setToast] = React.useState(null);
+  const toastTimer = React.useRef(null);
+  const [notifDays, setNotifDays] = React.useState([1, 2]);
+  const [notifyAll, setNotifyAll] = React.useState(true);
+
+  const showToast = (label) => {
+    clearTimeout(toastTimer.current);
+    setToast({ label });
+    toastTimer.current = setTimeout(() => setToast(null), 2200);
+  };
+
+  const [scale, setScale] = React.useState(1);
+  React.useEffect(() => {
+    const fit = () => setScale(Math.min(1, (window.innerWidth - 32) / W, (window.innerHeight - 32) / (H + 78)));
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, [W, H]);
+
+  const householdName = householdKey === 'h2' ? t.household2 : t.household;
+  const detailItem = items.find(i => i.id === detailId) || null;
+  const scanProduct = window.SS_SCAN_POOL[scanIndex % window.SS_SCAN_POOL.length];
+
+  const openDetail = (item) => { setDetailId(item.id); setDetailOpen(true); };
+  const addScanned = (prod) => {
+    setItems(prev => [{ ...prod, id: 'n' + Date.now() }, ...prev]);
+    setScanIndex(i => i + 1);
+    setScanOpen(false);
+    setView('inventory');
+    showToast(t.toast.added);
+  };
+  const consume = () => {
+    if (!detailItem) return;
+    if (detailItem.qty > 1) setItems(prev => prev.map(i => i.id === detailItem.id ? { ...i, qty: i.qty - 1 } : i));
+    else { setDetailOpen(false); setItems(prev => prev.filter(i => i.id !== detailItem.id)); }
+    showToast(t.toast.consumed);
+  };
+  const removeItem = () => {
+    if (!detailItem) return;
+    setDetailOpen(false);
+    setItems(prev => prev.filter(i => i.id !== detailItem.id));
+    showToast(t.toast.removed);
+  };
+  const changeQty = (d) => {
+    if (!detailItem) return;
+    setItems(prev => prev.map(i => i.id === detailItem.id ? { ...i, qty: Math.max(1, i.qty + d) } : i));
+  };
+  const switchHousehold = () => {
+    const key = householdKey === 'h1' ? 'h2' : 'h1';
+    setHouseholdKey(key);
+    showToast(t.toast.switched(key === 'h2' ? t.household2 : t.household));
+  };
+
+  return (
+    <div>
+      <div style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}>
+        <ChromeWindow width={W} height={H} url="scanandsave.app">
+          <div style={{
+            display: 'flex', height: '100%', position: 'relative', overflow: 'hidden',
+            background: C.bg, color: C.ink, fontFamily: T.fontBody, WebkitFontSmoothing: 'antialiased',
+          }}>
+            <DeskSidebar T={T} C={C} t={t} view={view} setView={setView} collapsed={compact}
+              onScan={() => setScanOpen(true)} householdName={householdName} onSwitch={switchHousehold} />
+
+            {view === 'inventory' ? (
+              <SSPresslessRow>
+                <DeskInventory T={T} C={C} t={t} items={items} filter={filter} setFilter={setFilter}
+                  onItemTap={openDetail} selectedId={detailOpen ? detailId : null} compact={compact} />
+                <DeskDetail T={T} C={C} t={t} lang={tw.lang} item={detailItem} open={detailOpen}
+                  onClose={() => setDetailOpen(false)} onConsume={consume} onRemove={removeItem}
+                  onQty={changeQty} overlay={compact} />
+              </SSPresslessRow>
+            ) : (
+              <DeskHousehold T={T} C={C} t={t} householdName={householdName}
+                notifDays={notifDays} setNotifDays={setNotifDays}
+                notifyAll={notifyAll} setNotifyAll={setNotifyAll}
+                onCopy={() => showToast(t.toast.copied)} />
+            )}
+
+            <DeskScanModal T={T} C={C} t={t} lang={tw.lang} open={scanOpen}
+              onClose={() => setScanOpen(false)} product={scanProduct} onAdd={addScanned} />
+
+            {/* toast — top center */}
+            <div style={{
+              position: 'absolute', top: 18, left: 0, right: 0, display: 'flex', justifyContent: 'center',
+              pointerEvents: 'none', zIndex: 90,
+              opacity: toast ? 1 : 0,
+              transform: toast ? 'translateY(0)' : 'translateY(-10px)',
+              transition: `opacity 0.35s ${SS_EASE}, transform 0.45s ${SS_EASE}`,
+            }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 100,
+                background: C.ink, color: C.bg, fontSize: 13.5, fontWeight: 600,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.25)', whiteSpace: 'nowrap',
+              }}>
+                <SSIcon name="check" size={14} color={C.bg} />
+                {toast && toast.label}
+              </div>
+            </div>
+          </div>
+        </ChromeWindow>
+      </div>
+
+      <TweaksPanel>
+        <TweakSection label="Gerät" />
+        <TweakRadio label="Ansicht" value={tw.device}
+          options={[{ value: 'desktop', label: 'Desktop' }, { value: 'tablet', label: 'Tablet' }]}
+          onChange={(v) => setTweak('device', v)} />
+        <TweakSection label="Inhalt" />
+        <TweakRadio label="Sprache" value={tw.lang}
+          options={[{ value: 'de', label: 'Deutsch' }, { value: 'es', label: 'Español' }]}
+          onChange={(v) => setTweak('lang', v)} />
+        <TweakSection label="Darstellung" />
+        <TweakToggle label="Dunkelmodus" value={tw.dark} onChange={(v) => setTweak('dark', v)} />
+      </TweaksPanel>
+    </div>
+  );
+}
+
+// simple flex row helper (keeps inventory + detail side by side)
+function SSPresslessRow({ children }) {
+  return <div style={{ flex: 1, display: 'flex', minWidth: 0, position: 'relative', overflow: 'hidden' }}>{children}</div>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
