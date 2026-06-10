@@ -4,7 +4,9 @@ import { useStore } from './lib/store'
 import { useT } from './lib/i18n'
 import { getCachedItems, setCachedItems } from './lib/idb'
 import { scheduleLocalNotifications, requestNotificationPermission } from './lib/notifications'
+import { useBreakpoint } from './lib/useBreakpoint'
 import TabBar from './components/molecules/TabBar'
+import Sidebar from './components/layout/Sidebar'
 import ToastStack from './components/molecules/Toast'
 
 const AuthScreen = lazy(() => import('./screens/AuthScreen'))
@@ -24,9 +26,12 @@ export default function App() {
   const activeHouseholdId = useStore(s => s.activeHouseholdId)
   const activeTab = useStore(s => s.activeTab)
   const setTab = useStore(s => s.setTab)
-  const addToast = useStore(s => s.addToast)
 
   const [appState, setAppState] = useState('loading')
+  const bp = useBreakpoint()
+  const isDesktop = bp === 'desktop'
+  const isTablet = bp === 'tablet'
+  const showSidebar = isDesktop || isTablet
 
   useEffect(() => {
     bootstrap()
@@ -61,26 +66,23 @@ export default function App() {
       }
       const hid = useStore.getState().activeHouseholdId ?? hhRes.households[0].id
 
-      // Load from IDB cache first (instant), then fetch in background
       const cached = await getCachedItems(hid)
       if (cached?.length) {
         setItems(cached)
         setAppState('app')
-        // Background fetch to update
         api.items.list(hid).then(r => {
           setItems(r.items)
           setCachedItems(hid, r.items)
-          scheduleNotifs(r.items, user.lang ?? 'de')
+          scheduleNotifs(r.items)
         }).catch(() => {})
       } else {
         const itemsRes = await api.items.list(hid)
         setItems(itemsRes.items)
         setCachedItems(hid, itemsRes.items)
         setAppState('app')
-        scheduleNotifs(itemsRes.items, user.lang ?? 'de')
+        scheduleNotifs(itemsRes.items)
       }
-    } catch (err) {
-      // Offline: try loading from IDB cache
+    } catch {
       const hid = useStore.getState().activeHouseholdId
       if (hid) {
         const cached = await getCachedItems(hid)
@@ -91,20 +93,13 @@ export default function App() {
     }
   }
 
-  async function scheduleNotifs(items, lang) {
+  async function scheduleNotifs(items) {
     const granted = await requestNotificationPermission()
-    if (granted) scheduleLocalNotifications(items, t)
+    if (granted) scheduleLocalNotifications(items, useT(useStore.getState().lang))
   }
 
-  function onAuth() {
-    setAppState('loading')
-    bootstrap()
-  }
-
-  function onOnboardingDone() {
-    setAppState('loading')
-    bootstrap()
-  }
+  function onAuth() { setAppState('loading'); bootstrap() }
+  function onOnboardingDone() { setAppState('loading'); bootstrap() }
 
   useEffect(() => {
     if (session?.lang) useStore.getState().setLang(session.lang)
@@ -125,50 +120,69 @@ export default function App() {
     </Suspense>
   )
 
+  // ── App layout ─────────────────────────────────────────────────────────────
   return (
     <div style={{
-      height: '100dvh', display: 'flex', flexDirection: 'column',
+      height: '100dvh', display: 'flex', flexDirection: 'row',
       background: 'var(--color-bg)', overflow: 'hidden',
     }}>
-      <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-        <div style={{
-          position: 'absolute', inset: 0,
-          opacity: activeTab === 'inventory' ? 1 : 0,
-          pointerEvents: activeTab === 'inventory' ? 'auto' : 'none',
-          overflowY: 'auto',
-          transition: 'opacity 0.4s var(--ease-spring)',
-          transform: activeTab === 'inventory' ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.992)',
-        }}>
-          <Suspense fallback={null}>
-            <InventoryScreen />
-          </Suspense>
-        </div>
+      {/* Sidebar — tablet & desktop */}
+      {showSidebar && activeTab !== 'scan' && (
+        <Sidebar
+          activeTab={activeTab}
+          onTabChange={setTab}
+          t={t}
+          collapsed={isTablet}
+        />
+      )}
 
-        {activeTab === 'scan' && (
-          <div style={{ position: 'absolute', inset: 0, zIndex: 10 }}>
-            <Suspense fallback={<Splash />}>
-              <ScanScreen onItemAdded={() => setTab('inventory')} />
+      {/* Main content area */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+        <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+
+          {/* Inventory */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            opacity: activeTab === 'inventory' ? 1 : 0,
+            pointerEvents: activeTab === 'inventory' ? 'auto' : 'none',
+            overflowY: 'auto',
+            transition: 'opacity 0.4s var(--ease-spring)',
+            transform: activeTab === 'inventory' ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.992)',
+          }}>
+            <Suspense fallback={null}>
+              <InventoryScreen />
             </Suspense>
           </div>
-        )}
 
-        <div style={{
-          position: 'absolute', inset: 0,
-          opacity: activeTab === 'home' ? 1 : 0,
-          pointerEvents: activeTab === 'home' ? 'auto' : 'none',
-          overflowY: 'auto',
-          transition: 'opacity 0.4s var(--ease-spring)',
-          transform: activeTab === 'home' ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.992)',
-        }}>
-          <Suspense fallback={null}>
-            <HouseholdScreen />
-          </Suspense>
+          {/* Scan — full screen overlay */}
+          {activeTab === 'scan' && (
+            <div style={{ position: 'absolute', inset: 0, zIndex: 10 }}>
+              <Suspense fallback={<Splash />}>
+                <ScanScreen onItemAdded={() => setTab('inventory')} />
+              </Suspense>
+            </div>
+          )}
+
+          {/* Household */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            opacity: activeTab === 'home' ? 1 : 0,
+            pointerEvents: activeTab === 'home' ? 'auto' : 'none',
+            overflowY: 'auto',
+            transition: 'opacity 0.4s var(--ease-spring)',
+            transform: activeTab === 'home' ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.992)',
+          }}>
+            <Suspense fallback={null}>
+              <HouseholdScreen />
+            </Suspense>
+          </div>
         </div>
-      </div>
 
-      {activeTab !== 'scan' && (
-        <TabBar activeTab={activeTab} onTabChange={setTab} t={t} />
-      )}
+        {/* TabBar — mobile only */}
+        {!showSidebar && activeTab !== 'scan' && (
+          <TabBar activeTab={activeTab} onTabChange={setTab} t={t} />
+        )}
+      </div>
 
       <ToastStack />
     </div>

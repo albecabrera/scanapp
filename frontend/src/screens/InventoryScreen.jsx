@@ -122,7 +122,7 @@ export default function InventoryScreen({ onOpenScan }) {
         transition: pullY === 0 ? 'transform 0.3s var(--ease-spring)' : 'none',
       }}
     >
-      {/* Pull-to-refresh indicator */}
+      {/* Pull-to-refresh indicator — fixed, outside content wrapper */}
       {(pullY > 0 || refreshing) && (
         <div style={{
           position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)',
@@ -143,8 +143,11 @@ export default function InventoryScreen({ onOpenScan }) {
         </div>
       )}
 
+      {/* Responsive content wrapper */}
+      <div style={{ maxWidth: 'var(--content-max)', margin: '0 auto' }}>
+
       {/* Header */}
-      <div style={{ padding: '60px 20px 0' }}>
+      <div style={{ padding: 'var(--safe-top) var(--content-gutter) 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <button onClick={() => openSheetWith('household-switcher')} style={{
             display: 'flex', alignItems: 'center', gap: 8,
@@ -193,7 +196,7 @@ export default function InventoryScreen({ onOpenScan }) {
       {/* PWA install banner */}
       {installable && (
         <div style={{
-          margin: '16px 20px 0',
+          margin: '16px var(--content-gutter) 0',
           background: 'var(--color-primary)', borderRadius: 'var(--radius-card)',
           padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12,
           animation: 'ss-fadeup 0.4s var(--ease-spring) both',
@@ -224,12 +227,12 @@ export default function InventoryScreen({ onOpenScan }) {
       {/* Expiring soon carousel */}
       {soonItems.length > 0 && (
         <div style={{ marginTop: 20 }}>
-          <div style={{ padding: '0 20px', marginBottom: 12 }}>
+          <div style={{ padding: '0 var(--content-gutter)', marginBottom: 12 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-ink-soft)', letterSpacing: '0.02em' }}>
               {t.inv.soon.toUpperCase()}
             </span>
           </div>
-          <div style={{ display: 'flex', gap: 10, paddingLeft: 20, overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: 4 }}>
+          <div style={{ display: 'flex', gap: 10, paddingLeft: 'var(--content-gutter)', overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: 4 }}>
             {soonItems.map(item => {
               const days = daysUntil(item.expires_at)
               const kind = expiryKind(days)
@@ -264,7 +267,7 @@ export default function InventoryScreen({ onOpenScan }) {
       )}
 
       {/* Filter chips */}
-      <div style={{ display: 'flex', gap: 8, padding: '16px 20px 0', overflowX: 'auto' }}>
+      <div style={{ display: 'flex', gap: 8, padding: '16px var(--content-gutter) 0', overflowX: 'auto' }}>
         {t.inv.filters.map((label, i) => {
           const key = t.inv.filterKeys[i]
           const active = locationFilter === key
@@ -285,7 +288,7 @@ export default function InventoryScreen({ onOpenScan }) {
       </div>
 
       {/* Item list by section */}
-      <div style={{ padding: '16px 20px 0' }}>
+      <div style={{ padding: '16px var(--content-gutter) 0' }}>
         {grouped.length === 0 && (
           <div style={{ textAlign: 'center', paddingTop: 40 }}>
             <p style={{ fontSize: 15, color: 'var(--color-ink-soft)', marginBottom: 8 }}>{t.inv.empty}</p>
@@ -298,7 +301,7 @@ export default function InventoryScreen({ onOpenScan }) {
             <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-ink-soft)', letterSpacing: '0.05em', marginBottom: 8, textTransform: 'uppercase' }}>
               {t.inv.sections[loc]}
             </p>
-            <div style={{
+            <div className="ss-item-grid" style={{
               background: 'var(--color-surface)', borderRadius: 'var(--radius-card)',
               border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)',
               overflow: 'hidden',
@@ -342,6 +345,8 @@ export default function InventoryScreen({ onOpenScan }) {
           </div>
         ))}
       </div>
+
+      </div>{/* /content wrapper */}
 
       <ProductDetailSheet
         open={openSheet === 'product-detail'}

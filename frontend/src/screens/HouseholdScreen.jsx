@@ -85,7 +85,8 @@ export default function HouseholdScreen() {
   const isAdmin = hh.members?.find(m => m.id === session?.userId)?.role === 'admin'
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--color-bg)', padding: '60px 20px 100px', overflowY: 'auto' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--color-bg)', padding: 'var(--safe-top) var(--content-gutter) 100px', overflowY: 'auto' }}>
+      <div style={{ maxWidth: 'var(--content-max)', margin: '0 auto' }}>
       <h1 style={{
         fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', margin: '0 0 24px',
         color: 'var(--color-ink)', fontFamily: 'var(--font-display)',
@@ -179,6 +180,7 @@ export default function HouseholdScreen() {
           <p style={{ fontSize: 12, color: 'var(--color-ink-faint)', margin: 0 }}>{t.perOwner}</p>
         </Card>
       )}
+      </div>{/* /content wrapper */}
     </div>
   )
 }

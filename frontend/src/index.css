@@ -81,6 +81,32 @@
   }
 }
 
+/* ─── Responsive layout variables ───────────────────────────────────────── */
+:root {
+  --safe-top:       56px;
+  --content-gutter: 20px;
+  --content-max:    100%;
+  --item-cols:      1;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --safe-top:       28px;
+    --content-gutter: 28px;
+    --content-max:    560px;
+    --item-cols:      2;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --safe-top:       28px;
+    --content-gutter: 32px;
+    --content-max:    840px;
+    --item-cols:      2;
+  }
+}
+
 /* ─── Reset ──────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -131,6 +157,40 @@ input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.6; }
 
 @keyframes ss-spin {
   to { transform: rotate(360deg); }
+}
+
+/* ─── Responsive inventory grid ──────────────────────────────────────────── */
+.ss-item-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--item-cols), 1fr);
+  gap: 0;
+}
+
+@media (min-width: 640px) {
+  .ss-item-grid {
+    gap: 12px;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+  }
+  .ss-item-grid > * {
+    border-radius: var(--radius-card) !important;
+    border: 1px solid var(--color-border) !important;
+    border-top: 1px solid var(--color-border) !important;
+    background: var(--color-surface) !important;
+    box-shadow: var(--shadow-card) !important;
+  }
+}
+
+/* ─── Auth/Onboarding: centered form on wide screens ────────────────────── */
+@media (min-width: 640px) {
+  .ss-auth-form, .ss-onboarding-form {
+    max-width: 400px;
+    margin: 0 auto;
+    width: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
