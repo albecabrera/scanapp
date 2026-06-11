@@ -13,6 +13,9 @@ export const translations = {
       autoAdded: (name) => `${name} → lista de compras`,
       toInventory: 'Al inventario',
       movedToInventory: (name) => `${name} → inventario`,
+      unitKeys: ['', 'g', 'mg', 'kg', 'L', 'ml', 'paq'],
+      unitLabel: { '': '—', g: 'g', mg: 'mg', kg: 'kg', L: 'L', ml: 'ml', paq: 'paq.' },
+      qty: 'Cant.',
     },
     stats: {
       title: 'Este mes',
@@ -195,6 +198,9 @@ export const translations = {
       autoAdded: (name) => `${name} → Einkaufsliste`,
       toInventory: 'In die Vorräte',
       movedToInventory: (name) => `${name} → Vorräte`,
+      unitKeys: ['', 'g', 'mg', 'kg', 'L', 'ml', 'paq'],
+      unitLabel: { '': '—', g: 'g', mg: 'mg', kg: 'kg', L: 'L', ml: 'ml', paq: 'Pkt.' },
+      qty: 'Menge',
     },
     stats: {
       title: 'Dieser Monat',
@@ -377,6 +383,9 @@ export const translations = {
       autoAdded: (name) => `${name} → shopping list`,
       toInventory: 'To inventory',
       movedToInventory: (name) => `${name} → inventory`,
+      unitKeys: ['', 'g', 'mg', 'kg', 'L', 'ml', 'paq'],
+      unitLabel: { '': '—', g: 'g', mg: 'mg', kg: 'kg', L: 'L', ml: 'ml', paq: 'pkg.' },
+      qty: 'Qty',
     },
     stats: {
       title: 'This month',

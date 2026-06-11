@@ -16,6 +16,8 @@ export default function ShoppingScreen() {
 
   const [items, setItems] = useState([])
   const [input, setInput] = useState('')
+  const [qty, setQty] = useState(1)
+  const [unit, setUnit] = useState('')
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -37,8 +39,10 @@ export default function ShoppingScreen() {
     if (!name) return
     setLoading(true)
     setInput('')
+    setQty(1)
+    setUnit('')
     try {
-      const item = await api.shopping.add(activeHouseholdId, { name })
+      const item = await api.shopping.add(activeHouseholdId, { name, quantity: qty, unit })
       setItems(prev => {
         const idx = prev.findIndex(i => i.id === item.id)
         return idx >= 0 ? prev.map((i, n) => n === idx ? item : i) : [item, ...prev]
@@ -122,28 +126,77 @@ export default function ShoppingScreen() {
           <LangSwitcher />
         </div>
 
-        {/* Add input */}
-        <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
-          <input
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && add()}
-            placeholder={ts.placeholder}
-            style={{
-              flex: 1, height: 48, borderRadius: 'var(--radius-btn)',
-              border: '1.5px solid var(--color-border)', background: 'var(--color-surface)',
-              color: 'var(--color-ink)', padding: '0 14px', fontSize: 15,
-              fontFamily: 'var(--font-body)', outline: 'none',
-            }}
-          />
-          <button className="ss-btn-primary" onClick={add} disabled={loading || !input.trim()} style={{
-            height: 48, borderRadius: 'var(--radius-btn)', color: 'var(--color-on-primary)',
-            border: 'none', padding: '0 18px', fontSize: 14, fontWeight: 700,
-            cursor: 'pointer', fontFamily: 'var(--font-body)',
-            opacity: (loading || !input.trim()) ? 0.6 : 1,
-          }}>
-            {ts.add}
-          </button>
+        {/* Add form */}
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+            <input
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && add()}
+              placeholder={ts.placeholder}
+              style={{
+                flex: 1, height: 48, borderRadius: 'var(--radius-btn)',
+                border: '1.5px solid var(--color-border)', background: 'var(--color-surface)',
+                color: 'var(--color-ink)', padding: '0 14px', fontSize: 15,
+                fontFamily: 'var(--font-body)', outline: 'none',
+              }}
+            />
+            <button className="ss-btn-primary" onClick={add} disabled={loading || !input.trim()} style={{
+              height: 48, borderRadius: 'var(--radius-btn)', color: 'var(--color-on-primary)',
+              border: 'none', padding: '0 18px', fontSize: 14, fontWeight: 700,
+              cursor: 'pointer', fontFamily: 'var(--font-body)',
+              opacity: (loading || !input.trim()) ? 0.6 : 1,
+            }}>
+              {ts.add}
+            </button>
+          </div>
+
+          {/* Qty stepper + unit chips */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflowX: 'auto', paddingBottom: 2 }}>
+            {/* Qty stepper */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 0,
+              background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-chip)', overflow: 'hidden', flexShrink: 0,
+            }}>
+              <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{
+                width: 32, height: 32, background: 'none', border: 'none',
+                cursor: 'pointer', fontSize: 16, color: 'var(--color-ink-soft)',
+                fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>−</button>
+              <span style={{
+                minWidth: 26, textAlign: 'center', fontSize: 13, fontWeight: 700,
+                color: 'var(--color-ink)', userSelect: 'none',
+              }}>{qty}</span>
+              <button onClick={() => setQty(q => q + 1)} style={{
+                width: 32, height: 32, background: 'none', border: 'none',
+                cursor: 'pointer', fontSize: 16, color: 'var(--color-ink-soft)',
+                fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>+</button>
+            </div>
+
+            {/* Divider */}
+            <div style={{ width: 1, height: 20, background: 'var(--color-border)', flexShrink: 0 }} />
+
+            {/* Unit chips */}
+            {ts.unitKeys.map(key => {
+              const active = unit === key
+              return (
+                <button key={key} onClick={() => setUnit(key)} style={{
+                  flexShrink: 0, height: 32, padding: '0 11px',
+                  borderRadius: 'var(--radius-chip)',
+                  background: active ? 'var(--color-ink)' : 'var(--color-surface)',
+                  color: active ? 'var(--color-bg)' : 'var(--color-ink-soft)',
+                  border: active ? 'none' : '1px solid var(--color-border)',
+                  fontSize: 12.5, fontWeight: active ? 700 : 500,
+                  cursor: 'pointer', fontFamily: 'var(--font-body)',
+                  transition: 'background 0.15s, color 0.15s',
+                }}>
+                  {ts.unitLabel[key]}
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         {/* Empty state */}
@@ -163,7 +216,7 @@ export default function ShoppingScreen() {
             overflow: 'hidden', marginBottom: 'var(--space-section)',
           }}>
             {pending.map((item, idx) => (
-              <Row key={item.id} item={item} idx={idx} onToggle={toggle} onRemove={remove} />
+              <Row key={item.id} item={item} idx={idx} onToggle={toggle} onRemove={remove} unitLabel={ts.unitLabel} />
             ))}
           </div>
         )}
@@ -189,7 +242,7 @@ export default function ShoppingScreen() {
             }}>
               {done.map((item, idx) => (
                 <Row key={item.id} item={item} idx={idx} onToggle={toggle} onRemove={remove}
-                  onMove={moveToInventory} moveLabel={ts.toInventory} />
+                  onMove={moveToInventory} moveLabel={ts.toInventory} unitLabel={ts.unitLabel} />
               ))}
             </div>
           </>
@@ -199,7 +252,7 @@ export default function ShoppingScreen() {
   )
 }
 
-function Row({ item, idx, onToggle, onRemove, onMove = null, moveLabel = '' }) {
+function Row({ item, idx, onToggle, onRemove, onMove = null, moveLabel = '', unitLabel = {} }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 13,
@@ -228,8 +281,18 @@ function Row({ item, idx, onToggle, onRemove, onMove = null, moveLabel = '' }) {
           color: item.checked ? 'var(--color-ink-faint)' : 'var(--color-ink)',
           textDecoration: item.checked ? 'line-through' : 'none',
         }}>
-          {item.name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}
+          {item.name}
         </span>
+        {(item.unit || item.quantity > 1) && (
+          <span style={{
+            fontSize: 12.5, fontWeight: 500, marginLeft: 7,
+            color: item.checked ? 'var(--color-ink-faint)' : 'var(--color-ink-soft)',
+            background: 'var(--color-surface2)', borderRadius: 6,
+            padding: '2px 7px', display: 'inline-block',
+          }}>
+            {item.quantity}{item.unit ? ' ' + (unitLabel[item.unit] ?? item.unit) : ''}
+          </span>
+        )}
       </div>
 
       {onMove && (

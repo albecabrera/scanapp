@@ -19,9 +19,11 @@ function shopping_add(array $session, int $hid): void {
     $b = body();
     require_fields($b, ['name']);
 
-    // Dedup: same unchecked name bumps quantity instead of duplicating
-    $stmt = $db->prepare("SELECT id, quantity FROM shopping_list_items WHERE household_id = ? AND name = ? AND checked = 0");
-    $stmt->execute([$hid, trim($b['name'])]);
+    $unit = trim($b['unit'] ?? '');
+
+    // Dedup: same unchecked name+unit bumps quantity instead of duplicating
+    $stmt = $db->prepare("SELECT id, quantity FROM shopping_list_items WHERE household_id = ? AND name = ? AND unit = ? AND checked = 0");
+    $stmt->execute([$hid, trim($b['name']), $unit]);
     $existing = $stmt->fetch();
     if ($existing) {
         $newQty = (int)$existing['quantity'] + (int)($b['quantity'] ?? 1);
@@ -30,12 +32,13 @@ function shopping_add(array $session, int $hid): void {
     }
 
     $db->prepare("
-        INSERT INTO shopping_list_items (household_id, name, ean, quantity, added_by)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO shopping_list_items (household_id, name, ean, quantity, unit, added_by)
+        VALUES (?, ?, ?, ?, ?, ?)
     ")->execute([
         $hid, trim($b['name']),
         trim($b['ean'] ?? ''),
         (int)($b['quantity'] ?? 1),
+        $unit,
         $session['sub'],
     ]);
     json_ok(shopping_fetch($db, (int)$db->lastInsertId()), 201);
@@ -46,7 +49,7 @@ function shopping_update(array $session, int $hid, int $sid): void {
     membership_required($db, $hid, $session['sub']);
     $b = body();
     $sets = []; $vals = [];
-    foreach (['name', 'quantity', 'checked'] as $f) {
+    foreach (['name', 'quantity', 'unit', 'checked'] as $f) {
         if (array_key_exists($f, $b)) { $sets[] = "$f = ?"; $vals[] = $f === 'checked' ? (int)(bool)$b[$f] : $b[$f]; }
     }
     if ($sets) {
@@ -88,6 +91,7 @@ function shopping_to_obj(array $r): array {
         'name'       => $r['name'],
         'ean'        => $r['ean'],
         'quantity'   => (int)$r['quantity'],
+        'unit'       => $r['unit'] ?? '',
         'checked'    => (bool)$r['checked'],
         'added_by'   => ['display_name' => $r['ab_name'], 'avatar_index' => (int)$r['ab_av']],
         'created_at' => gmdate('c', strtotime($r['created_at'])),
