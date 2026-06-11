@@ -503,6 +503,11 @@ export const translations = {
 
 export const LANGS = ['de', 'es', 'en']
 
-export function useT(lang = 'de') {
+// Plain accessor for non-component code (event handlers, async callbacks)
+export function getT(lang = 'de') {
   return translations[lang] ?? translations.de
+}
+
+export function useT(lang = 'de') {
+  return getT(lang)
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { api } from './lib/api'
 import { useStore } from './lib/store'
-import { useT } from './lib/i18n'
+import { useT, getT } from './lib/i18n'
 import { getCachedItems, setCachedItems } from './lib/idb'
 import { scheduleLocalNotifications, requestNotificationPermission } from './lib/notifications'
 import { useBreakpoint } from './lib/useBreakpoint'
@@ -114,7 +114,7 @@ export default function App() {
 
   async function scheduleNotifs(items) {
     const granted = await requestNotificationPermission()
-    if (granted) scheduleLocalNotifications(items, useT(useStore.getState().lang))
+    if (granted) scheduleLocalNotifications(items, getT(useStore.getState().lang))
   }
 
   function onAuth() { setAppState('loading'); bootstrap() }

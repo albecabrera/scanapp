@@ -16,13 +16,18 @@ function products_lookup(string $ean): void {
     }
 
     $url = "https://world.openfoodfacts.org/api/v2/product/$ean.json";
-    $ctx = stream_context_create(['http' => [
-        'timeout'    => 10,
-        'user_agent' => 'ScanAndSave/1.0 (local dev)',
-        'header'     => "Accept: application/json\r\n",
-    ]]);
-    $raw = @file_get_contents($url, false, $ctx);
-    if ($raw === false) json_err('Product not found', 'PRODUCT_NOT_FOUND', 404);
+    $ch  = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 10,
+        CURLOPT_USERAGENT      => 'ScanAndSave/1.0 (local dev)',
+        CURLOPT_HTTPHEADER     => ['Accept: application/json'],
+        CURLOPT_FOLLOWLOCATION => true,
+    ]);
+    $raw  = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($raw === false || $code !== 200) json_err('Product not found', 'PRODUCT_NOT_FOUND', 404);
 
     $data = json_decode($raw, true);
     if (($data['status'] ?? 0) !== 1) json_err('Product not found', 'PRODUCT_NOT_FOUND', 404);
