@@ -58,7 +58,7 @@ export default function HouseholdScreen() {
       await navigator.share({ title: 'Scan & Save', url: invite.share_url })
     } catch {
       navigator.clipboard.writeText(invite.share_url).catch(() => {})
-      addToast('Link copiado')
+      addToast(t.copied)
     }
   }
 

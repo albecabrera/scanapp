@@ -165,7 +165,7 @@ export default function InventoryScreen() {
             animation: refreshing ? 'ss-spin 0.7s linear infinite' : 'none',
             transform: refreshing ? 'none' : `rotate(${(pullY / PTR_THRESHOLD) * 360}deg)`,
           }} />
-          {refreshing ? 'Actualizando…' : 'Soltar para actualizar'}
+          {refreshing ? t.inv.refreshing : t.inv.pullToRefresh}
         </div>
       )}
 
@@ -294,10 +294,10 @@ export default function InventoryScreen() {
         }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>
-              {lang === 'de' ? 'App installieren' : 'Instalar la app'}
+              {t.inv.installTitle}
             </div>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>
-              {lang === 'de' ? 'Schneller Zugriff ohne Browser' : 'Acceso rápido sin el navegador'}
+              {t.inv.installSub}
             </div>
           </div>
           <button onClick={installPWA} style={{
@@ -306,7 +306,7 @@ export default function InventoryScreen() {
             fontSize: 13, fontWeight: 700, cursor: 'pointer',
             fontFamily: 'var(--font-body)',
           }}>
-            {lang === 'de' ? 'Installieren' : 'Instalar'}
+            {t.inv.installCta}
           </button>
           <button onClick={() => setInstallable(false)} style={{
             background: 'none', border: 'none', cursor: 'pointer', padding: 4,
