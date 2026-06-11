@@ -5,6 +5,7 @@ import { useT } from '../lib/i18n'
 import { suggestExpiryDays, addDays } from '../lib/expirySuggest'
 import Icon from '../components/atoms/Icon'
 import Avatar from '../components/atoms/Avatar'
+import LangSwitcher from '../components/atoms/LangSwitcher'
 
 export default function ShoppingScreen() {
   const lang = useStore(s => s.lang)
@@ -106,15 +107,20 @@ export default function ShoppingScreen() {
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--color-bg)', padding: 'var(--safe-top) var(--content-gutter) 120px', overflowY: 'auto' }}>
       <div style={{ maxWidth: 'var(--content-max)', margin: '0 auto' }}>
-        <h1 style={{
-          fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', margin: '0 0 4px',
-          color: 'var(--color-ink)', fontFamily: 'var(--font-display)',
-        }}>
-          {ts.title}
-        </h1>
-        <p style={{ fontSize: 14, color: 'var(--color-ink-soft)', margin: '0 0 20px' }}>
-          {ts.pending(pending.length)}
-        </p>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div>
+            <h1 style={{
+              fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', margin: '0 0 4px',
+              color: 'var(--color-ink)', fontFamily: 'var(--font-display)',
+            }}>
+              {ts.title}
+            </h1>
+            <p style={{ fontSize: 14, color: 'var(--color-ink-soft)', margin: 0 }}>
+              {ts.pending(pending.length)}
+            </p>
+          </div>
+          <LangSwitcher />
+        </div>
 
         {/* Add input */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>

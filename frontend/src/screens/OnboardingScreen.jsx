@@ -3,6 +3,7 @@ import { api } from '../lib/api'
 import { useStore } from '../lib/store'
 import { useT } from '../lib/i18n'
 import Icon from '../components/atoms/Icon'
+import LangSwitcher from '../components/atoms/LangSwitcher'
 
 export default function OnboardingScreen({ onDone }) {
   const lang = useStore(s => s.lang)
@@ -67,6 +68,11 @@ export default function OnboardingScreen({ onDone }) {
       position: 'fixed', inset: 0, background: 'var(--color-bg)',
       overflow: 'hidden',
     }}>
+      {/* Language switcher — top right */}
+      <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}>
+        <LangSwitcher />
+      </div>
+
       {/* Step 0 — Welcome */}
       <div style={slideStyle(0)}>
         <div style={{
@@ -182,7 +188,7 @@ export default function OnboardingScreen({ onDone }) {
             background: 'none', border: 'none', color: 'var(--color-ink-soft)',
             fontSize: 14, cursor: 'pointer', fontFamily: 'var(--font-body)', padding: 0,
           }}>
-            ← Volver
+            ← {t.back}
           </button>
         </form>
       </div>

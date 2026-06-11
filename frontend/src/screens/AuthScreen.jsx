@@ -3,6 +3,7 @@ import { api } from '../lib/api'
 import { useStore } from '../lib/store'
 import { useT } from '../lib/i18n'
 import Icon from '../components/atoms/Icon'
+import LangSwitcher from '../components/atoms/LangSwitcher'
 
 export default function AuthScreen({ onAuth }) {
   const lang = useStore(s => s.lang)
@@ -42,7 +43,13 @@ export default function AuthScreen({ onAuth }) {
       minHeight: '100dvh', background: 'var(--color-bg)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: '24px 24px 40px',
+      position: 'relative',
     }}>
+      {/* Language switcher — top right */}
+      <div style={{ position: 'absolute', top: 16, right: 16 }}>
+        <LangSwitcher />
+      </div>
+
       <div style={{ width: '100%', maxWidth: 380 }}>
         {/* Logo */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 36 }}>

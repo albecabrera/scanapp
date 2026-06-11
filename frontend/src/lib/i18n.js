@@ -159,6 +159,7 @@ export const translations = {
       successCreate: '¡Hogar creado!',
       successJoin: '¡Te uniste!',
       goToInventory: 'Ver el inventario',
+      back: 'Volver',
     },
     toast: {
       added: 'Añadido al hogar',
@@ -340,6 +341,7 @@ export const translations = {
       successCreate: 'Haushalt erstellt!',
       successJoin: 'Beigetreten!',
       goToInventory: 'Zu den Vorräten',
+      back: 'Zurück',
     },
     toast: {
       added: 'Zum Haushalt hinzugefügt',
@@ -521,6 +523,7 @@ export const translations = {
       successCreate: 'Household created!',
       successJoin: 'You joined!',
       goToInventory: 'Go to inventory',
+      back: 'Back',
     },
     toast: {
       added: 'Added to household',

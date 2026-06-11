@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { api } from '../lib/api'
 import { useStore, getActiveHousehold } from '../lib/store'
-import { useT, translations, LANGS } from '../lib/i18n'
+import { useT } from '../lib/i18n'
 import { setCachedItems } from '../lib/idb'
 import { daysUntil, expiryKind, expiryLabel, countExpiringSoon } from '../lib/expiry'
 import { matchRecipes } from '../lib/recipes'
 import { getInstallPrompt, clearInstallPrompt } from '../main'
 import Icon from '../components/atoms/Icon'
+import LangSwitcher from '../components/atoms/LangSwitcher'
 import Avatar, { AvatarStack } from '../components/atoms/Avatar'
 import Tile from '../components/atoms/Tile'
 import Badge from '../components/atoms/Badge'
@@ -33,13 +34,10 @@ export default function InventoryScreen() {
 
   const theme = useStore(s => s.theme)
   const setTheme = useStore(s => s.setTheme)
-  const setLangStore = useStore(s => s.setLang)
-
   const [refreshing, setRefreshing] = useState(false)
   const [pullY, setPullY] = useState(0)
   const [installable, setInstallable] = useState(false)
   const [query, setQuery] = useState('')
-  const [langOpen, setLangOpen] = useState(false)
 
   const isDark = theme === 'dark' ||
     (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
@@ -50,11 +48,6 @@ export default function InventoryScreen() {
     api.auth.update({ theme: next }).catch(() => {})
   }
 
-  function changeLang(l) {
-    setLangStore(l)
-    setLangOpen(false)
-    api.auth.update({ lang: l }).catch(() => {})
-  }
   const scrollRef = useRef()
   const touchStart = useRef(null)
 
@@ -192,39 +185,7 @@ export default function InventoryScreen() {
 
           {/* Right controls: language, theme, bell */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {/* Language picker */}
-            <div style={{ position: 'relative' }}>
-              <GlassIconBtn onClick={() => setLangOpen(o => !o)} active={langOpen}>
-                <Icon name="globe" size={19} color="var(--color-ink)" />
-              </GlassIconBtn>
-              {langOpen && (
-                <>
-                  <div onClick={() => setLangOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
-                  <div style={{
-                    position: 'absolute', top: 44, right: 0, zIndex: 61,
-                    background: 'var(--color-surface)', borderRadius: 16,
-                    border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-float)',
-                    padding: 6, minWidth: 150,
-                    animation: 'ss-pop 0.25s var(--ease-spring) both',
-                  }}>
-                    {LANGS.map(l => (
-                      <button key={l} onClick={() => changeLang(l)} style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        width: '100%', padding: '10px 12px', borderRadius: 11,
-                        background: lang === l ? 'var(--color-primary-tint)' : 'transparent',
-                        color: lang === l ? 'var(--color-primary)' : 'var(--color-ink)',
-                        border: 'none', cursor: 'pointer', fontSize: 14,
-                        fontWeight: lang === l ? 700 : 500, fontFamily: 'var(--font-body)',
-                        textAlign: 'left',
-                      }}>
-                        {translations[l].langName}
-                        {lang === l && <Icon name="check" size={15} color="var(--color-primary)" />}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+            <LangSwitcher />
 
             {/* Theme toggle */}
             <GlassIconBtn onClick={toggleTheme}>

@@ -6,6 +6,7 @@ import { useFeedback } from '../lib/useFeedback'
 import { startCamera, stopCamera, startScan, requestCameraPermission, toggleTorch } from '../lib/scanner'
 import { expiryChips } from '../lib/expirySuggest'
 import Icon from '../components/atoms/Icon'
+import LangSwitcher from '../components/atoms/LangSwitcher'
 
 export default function ScanScreen({ onItemAdded }) {
   const lang = useStore(s => s.lang)
@@ -210,15 +211,18 @@ export default function ScanScreen({ onItemAdded }) {
       }} />
 
       {/* Top buttons */}
-      <div style={{ position: 'absolute', top: 60, left: 20, right: 20, display: 'flex', justifyContent: 'space-between' }}>
+      <div style={{ position: 'absolute', top: 60, left: 20, right: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <GlassBtn icon="x" onClick={onItemAdded} />
-        {torchSupported && (
-          <GlassBtn
-            icon="flash"
-            onClick={handleTorch}
-            active={torchOn}
-          />
-        )}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <LangSwitcher dark />
+          {torchSupported && (
+            <GlassBtn
+              icon="flash"
+              onClick={handleTorch}
+              active={torchOn}
+            />
+          )}
+        </div>
       </div>
 
       {/* Viewfinder */}
