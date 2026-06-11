@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { api } from '../lib/api'
 import { useStore } from '../lib/store'
 import { useT } from '../lib/i18n'
+import { useFeedback } from '../lib/useFeedback'
 import { startCamera, stopCamera, startScan, requestCameraPermission, toggleTorch } from '../lib/scanner'
 import { expiryChips } from '../lib/expirySuggest'
 import Icon from '../components/atoms/Icon'
@@ -35,6 +36,7 @@ export default function ScanScreen({ onItemAdded }) {
   const [lookupLoading, setLookupLoading] = useState(false)
   const [torchOn, setTorchOn] = useState(false)
   const [torchSupported, setTorchSupported] = useState(false)
+  const fb = useFeedback()
 
   useEffect(() => {
     initCamera()
@@ -86,13 +88,18 @@ export default function ScanScreen({ onItemAdded }) {
   async function lookupManual() {
     if (!manualEan.trim()) return
     setLookupLoading(true)
+    fb.setLoading(true)
     try {
       const p = await api.products.lookup(manualEan.trim())
       setProduct(p)
       if (p.name) setManualName(p.name)
       setFoundEan(manualEan.trim())
+      fb.setLoading(false)
+      fb.triggerSuccess()
       setPhase('adding')
     } catch {
+      fb.setLoading(false)
+      fb.triggerError()
       addToast(ts.notFound)
     } finally {
       setLookupLoading(false)
@@ -158,12 +165,14 @@ export default function ScanScreen({ onItemAdded }) {
         </p>
         <div style={{ display: 'flex', gap: 10, width: '100%', maxWidth: 340 }}>
           <input
+            key={fb.feedbackKey}
             value={manualEan}
-            onChange={e => setManualEan(e.target.value)}
+            onChange={e => { setManualEan(e.target.value); fb.reset() }}
             onKeyDown={e => e.key === 'Enter' && lookupManual()}
             placeholder="8410188012096"
             inputMode="numeric"
             maxLength={14}
+            className={fb.feedbackClass}
             style={{
               flex: 1, height: 48, borderRadius: 'var(--radius-btn)',
               border: '1.5px solid var(--color-border)', background: 'var(--color-surface)',

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../../lib/store'
 import { daysUntil, expiryKind, expiryLabel } from '../../lib/expiry'
 import { api } from '../../lib/api'
+import { useFeedback } from '../../lib/useFeedback'
 import Sheet from '../../components/molecules/Sheet'
 import Tile from '../../components/atoms/Tile'
 import Badge from '../../components/atoms/Badge'
@@ -16,6 +17,7 @@ export default function ProductDetailSheet({ open, itemId, onClose, t }) {
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState(null)
   const [saving, setSaving] = useState(false)
+  const fb = useFeedback()
 
   const item = items.find(i => i.id === itemId)
   if (!item) return null
@@ -54,8 +56,10 @@ export default function ProductDetailSheet({ open, itemId, onClose, t }) {
       const updated = await api.items.update(activeHouseholdId, item.id, payload)
       upsertItem(updated)
       setEditing(false)
+      fb.triggerSuccess()
       addToast(t?.toast?.saved ?? 'Guardado')
     } catch {
+      fb.triggerError()
       addToast(t?.toast?.error ?? 'Error')
     } finally {
       setSaving(false)
@@ -99,6 +103,7 @@ export default function ProductDetailSheet({ open, itemId, onClose, t }) {
         )
       } else {
         upsertItem({ id: item.id, quantity: res.quantity })
+        fb.triggerSuccess()
         addToast(t?.toast?.consumed ?? 'Consumido', {
           label: undoLabel,
           onClick: async () => {
@@ -113,6 +118,7 @@ export default function ProductDetailSheet({ open, itemId, onClose, t }) {
       }
     } catch {
       upsertItem(snapshot)
+      fb.triggerError()
       addToast(t?.toast?.error ?? 'Error')
     }
   }
@@ -146,8 +152,12 @@ export default function ProductDetailSheet({ open, itemId, onClose, t }) {
 
   return (
     <Sheet open={open} onClose={closeAll}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+      {/* Header — feedback class en el wrapper interior */}
+      <div
+        key={fb.feedbackKey}
+        className={fb.feedbackClass}
+        style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20, borderRadius: 16 }}
+      >
         <Tile label={item.name} tileIndex={item.tile_index} size={54} imageUrl={item.image_url} />
         <div style={{ flex: 1, minWidth: 0 }}>
           {editing ? (

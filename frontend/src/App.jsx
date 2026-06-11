@@ -166,8 +166,13 @@ export default function App() {
             opacity: activeTab === 'inventory' ? 1 : 0,
             pointerEvents: activeTab === 'inventory' ? 'auto' : 'none',
             overflowY: 'auto',
-            transition: 'opacity 0.4s var(--ease-spring)',
-            transform: activeTab === 'inventory' ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.992)',
+            // depth shift: entra con scale 0.97→1, sale con 1→0.97
+            transform: activeTab === 'inventory'
+              ? 'translateY(0) scale(1)'
+              : 'translateY(10px) scale(0.97)',
+            transition: activeTab === 'inventory'
+              ? 'opacity 300ms var(--ease-gentle), transform 340ms var(--ease-slide)'
+              : 'opacity 200ms var(--ease-snappy), transform 220ms var(--ease-snappy)',
           }}>
             <Suspense fallback={null}>
               <InventoryScreen />
@@ -189,8 +194,12 @@ export default function App() {
             opacity: activeTab === 'shopping' ? 1 : 0,
             pointerEvents: activeTab === 'shopping' ? 'auto' : 'none',
             overflowY: 'auto',
-            transition: 'opacity 0.4s var(--ease-spring)',
-            transform: activeTab === 'shopping' ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.992)',
+            transform: activeTab === 'shopping'
+              ? 'translateY(0) scale(1)'
+              : 'translateY(10px) scale(0.97)',
+            transition: activeTab === 'shopping'
+              ? 'opacity 300ms var(--ease-gentle), transform 340ms var(--ease-slide)'
+              : 'opacity 200ms var(--ease-snappy), transform 220ms var(--ease-snappy)',
           }}>
             <Suspense fallback={null}>
               <ShoppingScreen />
@@ -203,8 +212,12 @@ export default function App() {
             opacity: activeTab === 'home' ? 1 : 0,
             pointerEvents: activeTab === 'home' ? 'auto' : 'none',
             overflowY: 'auto',
-            transition: 'opacity 0.4s var(--ease-spring)',
-            transform: activeTab === 'home' ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.992)',
+            transform: activeTab === 'home'
+              ? 'translateY(0) scale(1)'
+              : 'translateY(10px) scale(0.97)',
+            transition: activeTab === 'home'
+              ? 'opacity 300ms var(--ease-gentle), transform 340ms var(--ease-slide)'
+              : 'opacity 200ms var(--ease-snappy), transform 220ms var(--ease-snappy)',
           }}>
             <Suspense fallback={null}>
               <HouseholdScreen />
