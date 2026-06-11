@@ -19,6 +19,9 @@ const PATHS = {
   cart: <g fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3.5 4.5h2l2.2 11a1.5 1.5 0 0 0 1.5 1.2h8.4a1.5 1.5 0 0 0 1.5-1.2l1.4-7H6.5" /><circle cx="9.5" cy="20" r="1.4" /><circle cx="17.5" cy="20" r="1.4" /></g>,
   search: <g fill="none" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></g>,
   chart: <g fill="none" strokeWidth="1.8" strokeLinecap="round"><path d="M5 19.5v-7M12 19.5v-13M19 19.5v-4" /></g>,
+  sun: <g fill="none" strokeWidth="1.7" strokeLinecap="round"><circle cx="12" cy="12" r="4" /><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4" /></g>,
+  moon: <path d="M19.5 13.5A7.5 7.5 0 0 1 10.5 4.5a7.5 7.5 0 1 0 9 9Z" fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />,
+  globe: <g fill="none" strokeWidth="1.6" strokeLinecap="round"><circle cx="12" cy="12" r="8.2" /><path d="M3.8 12h16.4M12 3.8c2.3 2.2 3.5 5 3.5 8.2s-1.2 6-3.5 8.2c-2.3-2.2-3.5-5-3.5-8.2s1.2-6 3.5-8.2Z" /></g>,
 }
 
 export default function Icon({ name, size = 22, color = 'currentColor', style }) {

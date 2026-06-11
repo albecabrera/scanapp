@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { api } from '../lib/api'
 import { useStore, getActiveHousehold } from '../lib/store'
-import { useT } from '../lib/i18n'
+import { useT, translations, LANGS } from '../lib/i18n'
 import { setCachedItems } from '../lib/idb'
 import { daysUntil, expiryKind, expiryLabel, countExpiringSoon } from '../lib/expiry'
 import { matchRecipes } from '../lib/recipes'
@@ -31,10 +31,30 @@ export default function InventoryScreen({ onOpenScan }) {
   const households = useStore(s => s.households)
   const hh = getActiveHousehold({ households, activeHouseholdId })
 
+  const theme = useStore(s => s.theme)
+  const setTheme = useStore(s => s.setTheme)
+  const setLangStore = useStore(s => s.setLang)
+
   const [refreshing, setRefreshing] = useState(false)
   const [pullY, setPullY] = useState(0)
   const [installable, setInstallable] = useState(false)
   const [query, setQuery] = useState('')
+  const [langOpen, setLangOpen] = useState(false)
+
+  const isDark = theme === 'dark' ||
+    (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+
+  function toggleTheme() {
+    const next = isDark ? 'light' : 'dark'
+    setTheme(next)
+    api.auth.update({ theme: next }).catch(() => {})
+  }
+
+  function changeLang(l) {
+    setLangStore(l)
+    setLangOpen(false)
+    api.auth.update({ lang: l }).catch(() => {})
+  }
   const scrollRef = useRef()
   const touchStart = useRef(null)
 
@@ -170,22 +190,58 @@ export default function InventoryScreen({ onOpenScan }) {
             <Icon name="chevDown" size={14} color="var(--color-ink-soft)" />
           </button>
 
-          <button onClick={() => openSheetWith('notifications')} style={{
-            width: 38, height: 38, borderRadius: 'var(--radius-chip)',
-            background: 'var(--glass-bg-light)', backdropFilter: 'var(--glass-blur)',
-            WebkitBackdropFilter: 'var(--glass-blur)',
-            border: 'var(--glass-border-light)', boxShadow: 'var(--glass-shine-light)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-            position: 'relative',
-          }}>
-            <Icon name="bell" size={20} color="var(--color-ink)" />
-            {soonCount > 0 && (
-              <div style={{
-                position: 'absolute', top: 6, right: 6, width: 8, height: 8,
-                borderRadius: '50%', background: 'var(--color-danger)',
-              }} />
-            )}
-          </button>
+          {/* Right controls: language, theme, bell */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Language picker */}
+            <div style={{ position: 'relative' }}>
+              <GlassIconBtn onClick={() => setLangOpen(o => !o)} active={langOpen}>
+                <Icon name="globe" size={19} color="var(--color-ink)" />
+              </GlassIconBtn>
+              {langOpen && (
+                <>
+                  <div onClick={() => setLangOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
+                  <div style={{
+                    position: 'absolute', top: 44, right: 0, zIndex: 61,
+                    background: 'var(--color-surface)', borderRadius: 16,
+                    border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-float)',
+                    padding: 6, minWidth: 150,
+                    animation: 'ss-pop 0.25s var(--ease-spring) both',
+                  }}>
+                    {LANGS.map(l => (
+                      <button key={l} onClick={() => changeLang(l)} style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        width: '100%', padding: '10px 12px', borderRadius: 11,
+                        background: lang === l ? 'var(--color-primary-tint)' : 'transparent',
+                        color: lang === l ? 'var(--color-primary)' : 'var(--color-ink)',
+                        border: 'none', cursor: 'pointer', fontSize: 14,
+                        fontWeight: lang === l ? 700 : 500, fontFamily: 'var(--font-body)',
+                        textAlign: 'left',
+                      }}>
+                        {translations[l].langName}
+                        {lang === l && <Icon name="check" size={15} color="var(--color-primary)" />}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Theme toggle */}
+            <GlassIconBtn onClick={toggleTheme}>
+              <Icon name={isDark ? 'sun' : 'moon'} size={19} color="var(--color-ink)" />
+            </GlassIconBtn>
+
+            {/* Bell */}
+            <GlassIconBtn onClick={() => openSheetWith('notifications')} style={{ position: 'relative' }}>
+              <Icon name="bell" size={20} color="var(--color-ink)" />
+              {soonCount > 0 && (
+                <div style={{
+                  position: 'absolute', top: 6, right: 6, width: 8, height: 8,
+                  borderRadius: '50%', background: 'var(--color-danger)',
+                }} />
+              )}
+            </GlassIconBtn>
+          </div>
         </div>
 
         <h1 style={{
@@ -444,6 +500,23 @@ export default function InventoryScreen({ onOpenScan }) {
         t={t}
       />
     </div>
+  )
+}
+
+function GlassIconBtn({ children, onClick, active = false, style = {} }) {
+  return (
+    <button onClick={onClick} style={{
+      width: 38, height: 38, borderRadius: 'var(--radius-chip)',
+      background: active ? 'var(--color-primary-tint)' : 'var(--glass-bg-light)',
+      backdropFilter: 'var(--glass-blur)',
+      WebkitBackdropFilter: 'var(--glass-blur)',
+      border: 'var(--glass-border-light)', boxShadow: 'var(--glass-shine-light)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+      transition: 'background 0.2s',
+      ...style,
+    }}>
+      {children}
+    </button>
   )
 }
 
