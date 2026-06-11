@@ -3,7 +3,7 @@ import { api } from './lib/api'
 import { useStore } from './lib/store'
 import { useT, getT } from './lib/i18n'
 import { getCachedItems, setCachedItems } from './lib/idb'
-import { scheduleLocalNotifications, requestNotificationPermission } from './lib/notifications'
+import { scheduleLocalNotifications, requestNotificationPermission, subscribePush } from './lib/notifications'
 import { useBreakpoint } from './lib/useBreakpoint'
 import TabBar from './components/molecules/TabBar'
 import Sidebar from './components/layout/Sidebar'
@@ -28,10 +28,8 @@ export default function App() {
   const setSession = useStore(s => s.setSession)
   const lang = useStore(s => s.lang)
   const t = useT(lang)
-  const households = useStore(s => s.households)
   const setHouseholds = useStore(s => s.setHouseholds)
   const setItems = useStore(s => s.setItems)
-  const activeHouseholdId = useStore(s => s.activeHouseholdId)
   const activeTab = useStore(s => s.activeTab)
   const setTab = useStore(s => s.setTab)
 
@@ -114,7 +112,10 @@ export default function App() {
 
   async function scheduleNotifs(items) {
     const granted = await requestNotificationPermission()
-    if (granted) scheduleLocalNotifications(items, getT(useStore.getState().lang))
+    if (granted) {
+      scheduleLocalNotifications(items, getT(useStore.getState().lang))
+      subscribePush() // register Web Push for the daily expiry cron
+    }
   }
 
   function onAuth() { setAppState('loading'); bootstrap() }

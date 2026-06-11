@@ -97,6 +97,18 @@ Ver `design_handoff_scan_and_save/API_SPEC.md` para documentación completa.
 
 Alemán (`de`, default) y Español (`es`). La preferencia se guarda en localStorage.
 
+## Notificaciones push (cron diario)
+
+El script `backend/cron/notify_expiring.php` busca productos que alcanzan un umbral
+de aviso y envía Web Push (VAPID, RFC 8291/8292 en PHP puro). Programarlo en el host:
+
+```cron
+0 9 * * * docker exec xampp-php php /var/www/html/scanapp/api/cron/notify_expiring.php
+```
+
+Las claves VAPID se generan según `backend/config.example.php` y viven en
+`backend/keys/` (fuera del repo).
+
 ## PWA
 
 - Instalable (manifest + Service Worker)

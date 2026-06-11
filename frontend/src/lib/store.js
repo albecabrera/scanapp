@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware'
 
 export const useStore = create(
   persist(
-    (set, get) => ({
+    (set) => ({
       // ── Auth ─────────────────────────────────────────────
       session: null,       // { userId, token, displayName, avatarIndex, lang, theme }
       setSession: (session) => set({ session }),
@@ -53,10 +53,11 @@ export const useStore = create(
       closeSheet: () => set({ openSheet: null, activeItemId: null }),
 
       toastQueue: [],
-      addToast: (label) => {
-        const id = Date.now()
-        set(s => ({ toastQueue: [...s.toastQueue, { label, id }] }))
-        setTimeout(() => set(s => ({ toastQueue: s.toastQueue.filter(t => t.id !== id) })), 2400)
+      // action: { label, onClick } — toasts with an action stay longer (undo window)
+      addToast: (label, action = null) => {
+        const id = Date.now() + Math.random()
+        set(s => ({ toastQueue: [...s.toastQueue, { label, id, action }] }))
+        setTimeout(() => set(s => ({ toastQueue: s.toastQueue.filter(t => t.id !== id) })), action ? 5000 : 2400)
       },
       removeToast: (id) => set(s => ({ toastQueue: s.toastQueue.filter(t => t.id !== id) })),
 

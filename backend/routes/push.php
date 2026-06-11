@@ -1,5 +1,11 @@
 <?php
 function route_push(array $seg, string $method): void {
+    // Public: VAPID application server key for PushManager.subscribe()
+    if (($seg[1] ?? '') === 'vapid-key') {
+        if ($method !== 'GET') json_err('Method not allowed', 'METHOD_NOT_ALLOWED', 405);
+        json_ok(['key' => VAPID_PUBLIC_KEY]);
+    }
+
     $user = auth_required();
     if (($seg[1] ?? '') !== 'subscribe') json_err('Not found', 'NOT_FOUND', 404);
     match ($method) {

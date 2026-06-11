@@ -33,7 +33,7 @@ async function request(method, path, body = null) {
       try {
         const sw = await navigator.serviceWorker.ready
         await sw.sync.register('ss-sync')
-      } catch {}
+      } catch { /* ignore */ }
       const offlineErr = Object.assign(new Error('offline'), { offline: true })
       throw offlineErr
     }
@@ -78,6 +78,7 @@ export const api = {
     updateMe: (hid, body) => request('PATCH', `/households/${hid}/notifications/me`, body),
   },
   push: {
+    vapidKey:    ()     => request('GET', '/push/vapid-key'),
     subscribe:   (body) => request('POST', '/push/subscribe', body),
     unsubscribe: (body) => request('DELETE', '/push/subscribe', body),
   },

@@ -7,7 +7,6 @@ import Icon from '../components/atoms/Icon'
 export default function OnboardingScreen({ onDone }) {
   const lang = useStore(s => s.lang)
   const t = useT(lang).onboarding
-  const setSession = useStore(s => s.setSession)
   const upsertHousehold = useStore(s => s.upsertHousehold)
   const setActiveHousehold = useStore(s => s.setActiveHousehold)
 

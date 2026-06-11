@@ -26,7 +26,7 @@ if ('serviceWorker' in navigator) {
           window.dispatchEvent(new CustomEvent('ss-sync-done'))
         }
       })
-    } catch {}
+    } catch { /* ignore */ }
   })
 }
 

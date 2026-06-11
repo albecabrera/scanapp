@@ -5,7 +5,6 @@ import { useT } from '../lib/i18n'
 import { startCamera, stopCamera, startScan, requestCameraPermission, toggleTorch } from '../lib/scanner'
 import { expiryChips } from '../lib/expirySuggest'
 import Icon from '../components/atoms/Icon'
-import Tile from '../components/atoms/Tile'
 
 export default function ScanScreen({ onItemAdded }) {
   const lang = useStore(s => s.lang)
@@ -80,7 +79,7 @@ export default function ScanScreen({ onItemAdded }) {
         const p = await api.products.lookup(ean)
         setProduct(p)
         if (p.name) setManualName(p.name)
-      } catch {}
+      } catch { /* ignore */ }
     }, 650)
   }, [])
 
@@ -276,12 +275,27 @@ export default function ScanScreen({ onItemAdded }) {
       )}
 
       {phase === 'scanning' && (
-        <p style={{
-          position: 'absolute', bottom: 110, left: 0, right: 0, textAlign: 'center',
-          color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: 500,
-        }}>
-          {ts.hint}
-        </p>
+        <>
+          <p style={{
+            position: 'absolute', bottom: 150, left: 0, right: 0, textAlign: 'center',
+            color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: 500,
+          }}>
+            {ts.hint}
+          </p>
+          {/* Manual EAN entry — fallback when camera scanning struggles (iOS Safari etc.) */}
+          <button
+            onClick={() => { cleanup(); setPhase('noCam') }}
+            style={{
+              position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)',
+              background: 'rgba(255,255,255,0.14)', backdropFilter: 'blur(12px)',
+              border: '0.5px solid rgba(255,255,255,0.25)', borderRadius: 'var(--radius-chip)',
+              color: '#fff', padding: '9px 18px', fontSize: 13, fontWeight: 600,
+              cursor: 'pointer', fontFamily: 'var(--font-body)',
+            }}
+          >
+            {ts.manualEntry}
+          </button>
+        </>
       )}
     </div>
   )

@@ -12,14 +12,12 @@ export default function HouseholdScreen() {
   const households = useStore(s => s.households)
   const activeHouseholdId = useStore(s => s.activeHouseholdId)
   const session = useStore(s => s.session)
-  const upsertHousehold = useStore(s => s.upsertHousehold)
   const addToast = useStore(s => s.addToast)
 
   const hh = getActiveHousehold({ households, activeHouseholdId })
 
   const [invite, setInvite] = useState(null)
   const [copied, setCopied] = useState(false)
-  const [notifSettings, setNotifSettings] = useState(null)
   const [thresholds, setThresholds] = useState(['3'])
   const [warnAll, setWarnAll] = useState(false)
   const [genLoading, setGenLoading] = useState(false)
@@ -30,7 +28,6 @@ export default function HouseholdScreen() {
     api.households.inviteActive(hh.id).then(setInvite).catch(() => {})
     api.stats.get(hh.id).then(setStats).catch(() => {})
     api.notifications.get(hh.id).then(ns => {
-      setNotifSettings(ns)
       setThresholds(ns.threshold_days ?? ['3'])
       setWarnAll(ns.warn_all_tomorrow ?? false)
     }).catch(() => {})
@@ -72,7 +69,7 @@ export default function HouseholdScreen() {
     setThresholds(next)
     try {
       await api.notifications.update(hh.id, { threshold_days: next, warn_all_tomorrow: warnAll })
-    } catch {}
+    } catch { /* ignore */ }
   }
 
   async function toggleWarnAll() {
@@ -80,7 +77,7 @@ export default function HouseholdScreen() {
     setWarnAll(next)
     try {
       await api.notifications.update(hh.id, { threshold_days: thresholds, warn_all_tomorrow: next })
-    } catch {}
+    } catch { /* ignore */ }
   }
 
   if (!hh) return null
@@ -321,7 +318,7 @@ function StatBox({ value, label, color, bg }) {
   )
 }
 
-function timeAgo(iso, lang) {
+function timeAgo(iso) {
   const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000))
   if (mins < 60) return `${mins}m`
   const hours = Math.round(mins / 60)

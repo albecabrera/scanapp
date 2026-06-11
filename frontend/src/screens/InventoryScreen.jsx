@@ -15,7 +15,7 @@ import ProductDetailSheet from './sheets/ProductDetailSheet'
 
 const PTR_THRESHOLD = 72  // px of pull to trigger refresh
 
-export default function InventoryScreen({ onOpenScan }) {
+export default function InventoryScreen() {
   const lang = useStore(s => s.lang)
   const t = useT(lang)
   const items = useStore(s => s.items)
@@ -97,7 +97,7 @@ export default function InventoryScreen({ onOpenScan }) {
         const r = await api.items.list(activeHouseholdId)
         setItems(r.items)
         setCachedItems(activeHouseholdId, r.items)
-      } catch {}
+      } catch { /* ignore */ }
       setRefreshing(false)
     } else {
       setPullY(0)
@@ -533,7 +533,7 @@ function HouseholdSwitcherSheet({ open, onClose, t }) {
       const r = await api.items.list(hh.id)
       setItems(r.items)
       setCachedItems(hh.id, r.items)
-    } catch {}
+    } catch { /* ignore */ }
   }
 
   return (

@@ -1,4 +1,39 @@
 import { daysUntil } from './expiry'
+import { api } from './api'
+
+function b64ToUint8(base64url) {
+  const padding = '='.repeat((4 - base64url.length % 4) % 4)
+  const b64 = (base64url + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const raw = atob(b64)
+  return Uint8Array.from(raw, c => c.charCodeAt(0))
+}
+
+// Subscribe to Web Push and register the subscription server-side.
+// Safe to call repeatedly: reuses an existing subscription.
+export async function subscribePush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false
+  try {
+    const reg = await navigator.serviceWorker.ready
+    let sub = await reg.pushManager.getSubscription()
+    if (!sub) {
+      const { key } = await api.push.vapidKey()
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: b64ToUint8(key),
+      })
+    }
+    const json = sub.toJSON()
+    await api.push.subscribe({
+      endpoint: sub.endpoint,
+      p256dh: json.keys.p256dh,
+      auth: json.keys.auth,
+      user_agent: navigator.userAgent.slice(0, 250),
+    })
+    return true
+  } catch {
+    return false
+  }
+}
 
 export async function requestNotificationPermission() {
   if (!('Notification' in window)) return false

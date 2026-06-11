@@ -39,7 +39,7 @@ async function startNativeScan(videoEl, onFound) {
       const barcodes = await detector.detect(videoEl)
       const found = barcodes.find(b => EAN_FORMATS.includes(b.format))
       if (found) { onFound(found.rawValue); return }
-    } catch (_) {}
+    } catch { /* ignore */ }
     requestAnimationFrame(loop)
   }
   loop()

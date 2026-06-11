@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { api } from '../lib/api'
 import { useStore } from '../lib/store'
 import { useT } from '../lib/i18n'
+import { suggestExpiryDays, addDays } from '../lib/expirySuggest'
 import Icon from '../components/atoms/Icon'
 import Avatar from '../components/atoms/Avatar'
 
@@ -64,6 +65,27 @@ export default function ShoppingScreen() {
       await api.shopping.delete(activeHouseholdId, item.id)
     } catch {
       setItems(prev => [item, ...prev])
+    }
+  }
+
+  // Move a bought item into the inventory with a smart expiry suggestion
+  async function moveToInventory(item) {
+    const suggested = suggestExpiryDays(item.name)
+    setItems(prev => prev.filter(i => i.id !== item.id))
+    try {
+      const created = await api.items.create(activeHouseholdId, {
+        ean: item.ean || undefined,
+        name: item.name,
+        quantity: item.quantity,
+        location: 'pantry',
+        expires_at: suggested ? addDays(suggested) : null,
+      })
+      useStore.getState().upsertItem(created)
+      await api.shopping.delete(activeHouseholdId, item.id)
+      addToast(ts.movedToInventory(item.name))
+    } catch {
+      setItems(prev => [item, ...prev])
+      addToast(t.toast.error)
     }
   }
 
@@ -157,10 +179,11 @@ export default function ShoppingScreen() {
             </div>
             <div style={{
               background: 'var(--color-surface)', borderRadius: 'var(--radius-card)',
-              border: '1px solid var(--color-border)', overflow: 'hidden', opacity: 0.65,
+              border: '1px solid var(--color-border)', overflow: 'hidden', opacity: 0.8,
             }}>
               {done.map((item, idx) => (
-                <Row key={item.id} item={item} idx={idx} onToggle={toggle} onRemove={remove} />
+                <Row key={item.id} item={item} idx={idx} onToggle={toggle} onRemove={remove}
+                  onMove={moveToInventory} moveLabel={ts.toInventory} />
               ))}
             </div>
           </>
@@ -170,7 +193,7 @@ export default function ShoppingScreen() {
   )
 }
 
-function Row({ item, idx, onToggle, onRemove }) {
+function Row({ item, idx, onToggle, onRemove, onMove = null, moveLabel = '' }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 13,
@@ -202,6 +225,19 @@ function Row({ item, idx, onToggle, onRemove }) {
           {item.name}{item.quantity > 1 ? ` ×${item.quantity}` : ''}
         </span>
       </div>
+
+      {onMove && (
+        <button onClick={() => onMove(item)} style={{
+          background: 'var(--color-primary-tint)', color: 'var(--color-primary)',
+          border: 'none', borderRadius: 'var(--radius-chip)', padding: '6px 12px',
+          fontSize: 12, fontWeight: 700, cursor: 'pointer',
+          fontFamily: 'var(--font-body)', flexShrink: 0,
+          display: 'flex', alignItems: 'center', gap: 5,
+        }}>
+          <Icon name="basket" size={13} color="currentColor" />
+          {moveLabel}
+        </button>
+      )}
 
       <Avatar name={item.added_by.display_name} avatarIndex={item.added_by.avatar_index} size={20} />
 

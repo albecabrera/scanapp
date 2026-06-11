@@ -44,7 +44,7 @@ export async function setCachedItems(householdId, items) {
       tx.oncomplete = resolve
       tx.onerror = resolve
     })
-  } catch {}
+  } catch { /* ignore */ }
 }
 
 // ── Sync queue ─────────────────────────────────────────────────────────────
@@ -58,7 +58,7 @@ export async function enqueue(op) {
       req.onsuccess = resolve
       req.onerror = () => reject(req.error)
     })
-  } catch {}
+  } catch { /* ignore */ }
 }
 
 export async function getQueue() {
@@ -82,7 +82,7 @@ export async function dequeue(id) {
       req.onsuccess = resolve
       req.onerror = resolve
     })
-  } catch {}
+  } catch { /* ignore */ }
 }
 
 export async function clearQueue() {
@@ -94,5 +94,5 @@ export async function clearQueue() {
       req.onsuccess = resolve
       req.onerror = resolve
     })
-  } catch {}
+  } catch { /* ignore */ }
 }
