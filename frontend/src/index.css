@@ -67,7 +67,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --color-bg:        #0C130F;
     --color-bg-accent: radial-gradient(1200px 600px at 80% -10%, rgba(98,201,141,0.05), transparent 60%),
                        radial-gradient(900px 500px at -10% 100%, rgba(224,179,92,0.035), transparent 55%);
@@ -106,6 +106,47 @@
     --tile-4-bg: rgba(190,180,140,0.14); --tile-4-fg: #CFC79E;
     --tile-5-bg: rgba(214,178,92,0.13);  --tile-5-fg: #DDC07A;
   }
+}
+
+/* Manual dark override — same tokens regardless of system preference */
+:root[data-theme="dark"] {
+  --color-bg:    #0C130F;
+  --color-bg-accent: radial-gradient(1200px 600px at 80% -10%, rgba(98,201,141,0.05), transparent 60%),
+             radial-gradient(900px 500px at -10% 100%, rgba(224,179,92,0.035), transparent 55%);
+  --color-surface:   #151E18;
+  --color-surface2:  #1D291F;
+  --color-surface3:  #19241C;
+  --color-border:  rgba(236, 242, 236, 0.08);
+  --color-border-strong: rgba(236, 242, 236, 0.16);
+  --color-ink:     #EDF3ED;
+  --color-ink-soft:  rgba(237, 243, 237, 0.62);
+  --color-ink-faint: rgba(237, 243, 237, 0.38);
+  --color-primary:    #5FCB8C;
+  --color-primary-deep:   #46B375;
+  --color-on-primary:   #0C130F;
+  --color-primary-tint:   rgba(95, 203, 140, 0.14);
+  --grad-primary:  linear-gradient(180deg, #6AD497 0%, #5FCB8C 55%, #4FBD7E 100%);
+  --grad-primary-glow: 0 1px 0 rgba(255,255,255,0.2) inset, 0 8px 24px rgba(95,203,140,0.25), 0 2px 6px rgba(95,203,140,0.2);
+  --color-warn:     #E0B35C;
+  --color-warn-bg:  rgba(224, 179, 92, 0.14);
+  --color-danger:   #E8765F;
+  --color-danger-bg:  rgba(232, 118, 95, 0.15);
+  --color-tab-bg:  rgba(18, 26, 20, 0.88);
+  --shadow-xs:  0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-card:  0 1px 2px rgba(0,0,0,0.25), 0 4px 12px rgba(0,0,0,0.3), 0 12px 32px rgba(0,0,0,0.25);
+  --shadow-float: 0 2px 6px rgba(0,0,0,0.4), 0 12px 32px rgba(0,0,0,0.5), 0 32px 64px rgba(0,0,0,0.45);
+  --shadow-hover: 0 2px 4px rgba(0,0,0,0.35), 0 8px 20px rgba(0,0,0,0.4), 0 20px 44px rgba(0,0,0,0.35);
+  --cam-bg: linear-gradient(165deg, #232C25 0%, #131A15 55%, #0A100C 100%);
+  --avatar-0: #5FCB8C;
+  --avatar-1: #E0B35C;
+  --avatar-2: #7FAACB;
+  --avatar-3: #C99A77;
+  --tile-0-bg: rgba(95,203,140,0.16);  --tile-0-fg: #8FD9AE;
+  --tile-1-bg: rgba(224,179,92,0.16);  --tile-1-fg: #E5C37E;
+  --tile-2-bg: rgba(232,118,95,0.15);  --tile-2-fg: #EC9A87;
+  --tile-3-bg: rgba(232,118,95,0.13);  --tile-3-fg: #EC9A87;
+  --tile-4-bg: rgba(190,180,140,0.14); --tile-4-fg: #CFC79E;
+  --tile-5-bg: rgba(214,178,92,0.13);  --tile-5-fg: #DDC07A;
 }
 
 /* ─── Responsive layout variables ───────────────────────────────────────── */

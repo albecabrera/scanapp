@@ -6,6 +6,7 @@ const RECIPES = [
     minMatch: 1,
     es: { name: 'Tortilla de patatas', desc: 'Huevos + patatas + cebolla. 30 min.' },
     de: { name: 'Spanische Tortilla', desc: 'Eier + Kartoffeln + Zwiebel. 30 Min.' },
+    en: { name: 'Spanish omelette', desc: 'Eggs + potatoes + onion. 30 min.' },
     emoji: '🍳',
   },
   {
@@ -14,6 +15,7 @@ const RECIPES = [
     minMatch: 1,
     es: { name: 'Crêpes caseros', desc: 'Leche + huevos + harina. 20 min.' },
     de: { name: 'Pfannkuchen', desc: 'Milch + Eier + Mehl. 20 Min.' },
+    en: { name: 'Homemade crêpes', desc: 'Milk + eggs + flour. 20 min.' },
     emoji: '🥞',
   },
   {
@@ -22,6 +24,7 @@ const RECIPES = [
     minMatch: 2,
     es: { name: 'Quiche express', desc: 'Huevos + queso + verdura que tengas. 40 min.' },
     de: { name: 'Schnelle Quiche', desc: 'Eier + Käse + Gemüsereste. 40 Min.' },
+    en: { name: 'Express quiche', desc: 'Eggs + cheese + any veggies. 40 min.' },
     emoji: '🥧',
   },
   {
@@ -30,6 +33,7 @@ const RECIPES = [
     minMatch: 2,
     es: { name: 'Pasta al pomodoro', desc: 'Pasta + tomate triturado + queso. 15 min.' },
     de: { name: 'Pasta al Pomodoro', desc: 'Pasta + Tomatensoße + Käse. 15 Min.' },
+    en: { name: 'Pasta al pomodoro', desc: 'Pasta + crushed tomato + cheese. 15 min.' },
     emoji: '🍝',
   },
   {
@@ -38,6 +42,7 @@ const RECIPES = [
     minMatch: 1,
     es: { name: 'Batido / smoothie', desc: 'Lácteos por vencer + fruta madura. 5 min.' },
     de: { name: 'Smoothie', desc: 'Milchprodukte + reifes Obst. 5 Min.' },
+    en: { name: 'Smoothie', desc: 'Expiring dairy + ripe fruit. 5 min.' },
     emoji: '🥤',
   },
   {
@@ -46,6 +51,7 @@ const RECIPES = [
     minMatch: 2,
     es: { name: 'Sándwich caliente', desc: 'Pan + jamón + queso a la plancha. 10 min.' },
     de: { name: 'Heißes Sandwich', desc: 'Brot + Schinken + Käse gegrillt. 10 Min.' },
+    en: { name: 'Hot sandwich', desc: 'Bread + ham + grilled cheese. 10 min.' },
     emoji: '🥪',
   },
   {
@@ -54,6 +60,7 @@ const RECIPES = [
     minMatch: 1,
     es: { name: 'Salteado de verduras', desc: 'Verduras por vencer + arroz o pasta. 20 min.' },
     de: { name: 'Gemüsepfanne', desc: 'Gemüsereste + Reis oder Nudeln. 20 Min.' },
+    en: { name: 'Veggie stir-fry', desc: 'Expiring veggies + rice or pasta. 20 min.' },
     emoji: '🥘',
   },
   {
@@ -62,6 +69,7 @@ const RECIPES = [
     minMatch: 1,
     es: { name: 'Bowl de yogur', desc: 'Yogur + cereales + fruta o miel. 5 min.' },
     de: { name: 'Joghurt-Bowl', desc: 'Joghurt + Müsli + Obst oder Honig. 5 Min.' },
+    en: { name: 'Yogurt bowl', desc: 'Yogurt + cereal + fruit or honey. 5 min.' },
     emoji: '🥣',
   },
 ]

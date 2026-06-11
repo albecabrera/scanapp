@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../lib/api'
 import { useStore, getActiveHousehold } from '../lib/store'
-import { useT } from '../lib/i18n'
+import { useT, translations, LANGS } from '../lib/i18n'
 import Avatar from '../components/atoms/Avatar'
 import Icon from '../components/atoms/Icon'
 
@@ -237,8 +237,71 @@ export default function HouseholdScreen() {
           <p style={{ fontSize: 12, color: 'var(--color-ink-faint)', margin: 0 }}>{t.perOwner}</p>
         </Card>
       )}
+
+      {/* Preferences: language + theme */}
+      <PreferencesCard tFull={tFull} />
       </div>{/* /content wrapper */}
     </div>
+  )
+}
+
+function PreferencesCard({ tFull }) {
+  const lang = useStore(s => s.lang)
+  const theme = useStore(s => s.theme)
+  const setLang = useStore(s => s.setLang)
+  const setTheme = useStore(s => s.setTheme)
+  const ts = tFull.settings
+
+  function changeLang(l) {
+    setLang(l)
+    api.auth.update({ lang: l }).catch(() => {})
+  }
+
+  function changeTheme(th) {
+    setTheme(th)
+    api.auth.update({ theme: th }).catch(() => {})
+  }
+
+  const segBtn = (active) => ({
+    flex: 1, borderRadius: 10, padding: '9px 4px', fontSize: 13, fontWeight: active ? 700 : 500,
+    background: active ? 'var(--color-surface)' : 'transparent',
+    color: active ? 'var(--color-ink)' : 'var(--color-ink-soft)',
+    border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)',
+    boxShadow: active ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+    transition: 'background 0.2s, color 0.2s',
+  })
+
+  const segWrap = {
+    display: 'flex', gap: 4, background: 'var(--color-surface2)',
+    borderRadius: 'var(--radius-seg)', padding: 4,
+  }
+
+  return (
+    <Card style={{ marginTop: 16 }}>
+      <Label style={{ marginBottom: 14 }}>{ts.title}</Label>
+
+      <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-ink-soft)', marginBottom: 8 }}>
+        {ts.language}
+      </p>
+      <div style={{ ...segWrap, marginBottom: 18 }}>
+        {LANGS.map(l => (
+          <button key={l} onClick={() => changeLang(l)} style={segBtn(lang === l)}>
+            {translations[l].langName}
+          </button>
+        ))}
+      </div>
+
+      <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-ink-soft)', marginBottom: 8 }}>
+        {ts.theme}
+      </p>
+      <div style={segWrap}>
+        {['light', 'dark', 'system'].map(th => (
+          <button key={th} onClick={() => changeTheme(th)} style={segBtn(theme === th)}>
+            {ts.themes[th]}
+          </button>
+        ))}
+      </div>
+    </Card>
   )
 }
 

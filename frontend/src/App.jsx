@@ -35,6 +35,7 @@ export default function App() {
   const activeTab = useStore(s => s.activeTab)
   const setTab = useStore(s => s.setTab)
 
+  const theme = useStore(s => s.theme)
   const [appState, setAppState] = useState('loading')
   const bp = useBreakpoint()
   const isDesktop = bp === 'desktop'
@@ -45,6 +46,15 @@ export default function App() {
     bootstrap()
     preloadScan()
   }, [])
+
+  // Manual theme override: 'light'/'dark' set data-theme, 'system' removes it
+  useEffect(() => {
+    if (theme === 'light' || theme === 'dark') {
+      document.documentElement.dataset.theme = theme
+    } else {
+      delete document.documentElement.dataset.theme
+    }
+  }, [theme])
 
   // Refresh items when background sync completes
   useEffect(() => {
