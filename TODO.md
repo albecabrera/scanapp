@@ -3,19 +3,30 @@
 Checklist ordenado por prioridad. Cada bloque puede hacerse independientemente del siguiente,
 pero los bloques están en el orden correcto para hacer el primer deploy.
 
+**Última actualización:** 2026-06-15
+
 ---
 
-## BLOQUE 0 — Antes de tocar el servidor
+## BLOQUE 0 — Antes de tocar el servidor ✅ COMPLETO
 
-- [x] **Generar JWT_SECRET fuerte** — generado el 2026-06-15, guardado en `backend/config.prod.php`
+- [x] **PWA manifest** — paths corregidos a relativos; `start_url`, `scope`, `id` = `"."`
+- [x] **SW update detection** — toast "Actualizar" con 15s timeout + `SKIP_WAITING` handler
+- [x] **Security headers en API** — `security_headers()` en helpers.php (X-Frame-Options, nosniff, etc.)
+- [x] **Health endpoint** — `GET /api/v1/health` verifica DB, devuelve 503 si falla
+- [x] **Frontend .htaccess** — cache headers para assets (immutable JS/CSS, no-store SW)
+- [x] **offline.html** — fallback offline con i18n (de/es/en), cacheado en SW SHELL
+- [x] **CORS fix** — removido `localhost` hardcodeado; usa `CORS_DEV_ORIGIN` opcional
+- [x] **Generar JWT_SECRET fuerte** — 64 chars base64, guardado en `backend/config.prod.php`
 - [x] **Generar claves VAPID** — `backend/keys/vapid_private.prod.pem` (P-256, 256 bit)
   - Clave pública: `BPAFNT8lgs8jkf-OYRRvkwvPgm63ye6kIJmyW17dyL7O_olSmjBB_AdlroslnsJonWCFRq2-tBnrF5X31ZBEoLA`
-- [x] **`backend/config.prod.php` creado** — JWT + VAPID pre-rellenados; solo falta:
+- [x] **`backend/config.prod.php` creado** — JWT + VAPID pre-rellenados
+- [x] **Build de producción testeado** — `DEPLOY_PATH=/tmp/... npm run build` → limpio, SW hash inyectado
+- [x] **Código pusheado a GitHub** — rama `main`, 6 commits nuevos
+
+- [ ] **Completar `backend/config.prod.php`** — rellenar 3 campos pendientes:
   - `DB_PASS` — contraseña para el usuario `scanapp_user`
   - `FRONTEND_ORIGIN` — `https://TUDOMINIO.COM`
-  - `VAPID_SUBJECT` — `mailto:CAMBIAR@TUDOMINIO.COM`
-
-- [ ] **Completar `backend/config.prod.php`** — rellenar los 3 campos pendientes (DB_PASS, FRONTEND_ORIGIN, VAPID_SUBJECT)
+  - `VAPID_SUBJECT` — `mailto:TU@TUDOMINIO.COM`
 
 - [ ] **Elegir stack de servidor**
   - Nginx + PHP-FPM → usar `nginx.conf` (recomendado para VPS)
@@ -223,5 +234,4 @@ pero los bloques están en el orden correcto para hacer el primer deploy.
 - [ ] **Soporte de idioma `navigator.language`** — auto-detectar idioma del browser
   en el primer login y setearlo como default (actualmente default es `de`).
 
-- [ ] **Offline.html** — página de fallback más elegante cuando el SW no tiene cache.
-  Crear `frontend/public/offline.html` y registrarlo en sw.js.
+- [x] **Offline.html** — creada y registrada en SW (`frontend/public/offline.html`)
