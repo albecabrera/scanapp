@@ -22,10 +22,15 @@ define('JWT_SECRET', 'change-me-use-openssl-rand-base64-48');
 // Subdirectory:     define('APP_BASE', '/scanapp');   ← default
 define('APP_BASE', '/scanapp');
 
+// ── Environment ───────────────────────────────────────────────────────────────
+// 'development' enables debug output in /health endpoint
+define('APP_ENV', 'development');
+
 // ── CORS ──────────────────────────────────────────────────────────────────────
-// Dev:   'http://localhost:5173' or 'http://localhost:5174'
-// Prod:  'https://yourdomain.com' or 'https://yourdomain.com/scanapp'
+// Primary origin for CORS. Dev: localhost:5174, Prod: https://yourdomain.com
 define('FRONTEND_ORIGIN', 'http://localhost:5174');
+// Secondary origin allowed in dev (e.g. XAMPP local build). Leave empty in prod.
+define('CORS_DEV_ORIGIN', 'http://localhost/scanapp');
 
 // ── Web Push (VAPID) ──────────────────────────────────────────────────────────
 // Generate private key:

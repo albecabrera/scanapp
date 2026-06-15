@@ -1,7 +1,7 @@
 // Cache version injected by Vite at build time; 'dev' used in development
 const CACHE = 'ss-__SW_CACHE_VERSION__'
 const BASE = new URL(self.registration.scope).pathname  // e.g. '/scanapp/' or '/'
-const SHELL = [BASE, `${BASE}manifest.json`]
+const SHELL = [BASE, `${BASE}manifest.json`, `${BASE}offline.html`]
 
 // ── Install ────────────────────────────────────────────────────────────────
 
@@ -69,7 +69,12 @@ self.addEventListener('fetch', e => {
           caches.open(CACHE).then(c => c.put(request, res.clone()))
         }
         return res
-      }).catch(() => caches.match(BASE))
+      }).catch(() => {
+        // Navigation requests → offline page; everything else → silently fail
+        if (request.destination === 'document' || request.mode === 'navigate') {
+          return caches.match(`${BASE}offline.html`)
+        }
+      })
     })
   )
 })

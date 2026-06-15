@@ -34,8 +34,8 @@ function security_headers(): void {
 }
 
 function cors(): void {
-    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-    $allowed = [FRONTEND_ORIGIN, 'http://localhost/scanapp'];
+    $origin  = $_SERVER['HTTP_ORIGIN'] ?? '';
+    $allowed = array_filter([FRONTEND_ORIGIN, defined('CORS_DEV_ORIGIN') ? CORS_DEV_ORIGIN : '']);
     if (in_array($origin, $allowed, true)) {
         header("Access-Control-Allow-Origin: $origin");
     } else {
