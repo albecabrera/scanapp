@@ -1,0 +1,30 @@
+# ── Security headers ──────────────────────────────────────────────────────────
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=self, notifications=self, microphone=()"
+
+    # Allow SW to control the full /scanapp/ scope
+    <FilesMatch "sw\.js$">
+        Header always set Service-Worker-Allowed "/"
+        Header always set Cache-Control "no-store"
+    </FilesMatch>
+
+    # Long-lived cache for hashed assets (Vite adds content hash to filenames)
+    <FilesMatch "\.(js|css|woff2?)$">
+        Header always set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+
+    # No cache for manifest and index
+    <FilesMatch "(manifest\.json|index\.html)$">
+        Header always set Cache-Control "no-cache"
+    </FilesMatch>
+</IfModule>
+
+# ── Gzip ──────────────────────────────────────────────────────────────────────
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json
+    AddOutputFilterByType DEFLATE image/svg+xml font/woff2
+</IfModule>

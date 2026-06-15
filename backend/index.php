@@ -7,6 +7,7 @@ require_once __DIR__ . '/middleware.php';
 
 JWT::init(JWT_SECRET);
 cors();
+security_headers();
 
 $path   = trim($_GET['path'] ?? '', '/');
 $method = $_SERVER['REQUEST_METHOD'];
@@ -15,6 +16,10 @@ $seg    = array_values(array_filter(explode('/', $path)));
 if (empty($seg)) json_err('Not found', 'NOT_FOUND', 404);
 
 switch ($seg[0]) {
+    case 'health':
+        require_once __DIR__ . '/routes/health.php';
+        route_health();
+        break;
     case 'auth':
         require_once __DIR__ . '/routes/auth.php';
         route_auth($seg, $method);

@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
 
-const OUT_DIR = '/Users/acabrera/xampp-data/htdocs/scanapp'
+const OUT_DIR = process.env.DEPLOY_PATH ?? '/Users/acabrera/xampp-data/htdocs/scanapp'
 
 // Injects a content hash into sw.js replacing __SW_CACHE_VERSION__
 function swHashPlugin() {
