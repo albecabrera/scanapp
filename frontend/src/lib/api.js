@@ -1,6 +1,6 @@
 import { enqueue } from './idb'
 
-const BASE = '/api/v1'
+const BASE = `${import.meta.env.BASE_URL}api/v1`
 
 function token() {
   return localStorage.getItem('ss_token')

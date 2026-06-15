@@ -22,13 +22,11 @@ function swHashPlugin() {
   }
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [react(), swHashPlugin()],
-  define: {
-    // Allow sw.js in public/ to keep the placeholder; resolved at build time by plugin
-  },
+  base: command === 'build' ? '/scanapp/' : '/',
   server: {
-    port: 5173,
+    port: 5174,
     proxy: {
       '/api': {
         target: 'http://localhost',
@@ -41,4 +39,4 @@ export default defineConfig({
     outDir: OUT_DIR,
     emptyOutDir: false,
   },
-})
+}))
