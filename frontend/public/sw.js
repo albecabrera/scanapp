@@ -1,6 +1,7 @@
 // Cache version injected by Vite at build time; 'dev' used in development
 const CACHE = 'ss-__SW_CACHE_VERSION__'
-const SHELL = ['/', '/manifest.json']
+const BASE = new URL(self.registration.scope).pathname  // e.g. '/scanapp/' or '/'
+const SHELL = [BASE, `${BASE}manifest.json`]
 
 // ── Install ────────────────────────────────────────────────────────────────
 
@@ -31,7 +32,7 @@ self.addEventListener('fetch', e => {
   const url = new URL(request.url)
 
   // API: network-first; cache GET items for offline read
-  if (url.pathname.startsWith('/api/')) {
+  if (url.pathname.startsWith(`${BASE}api/`)) {
     if (url.pathname.includes('/items') && request.method === 'GET') {
       e.respondWith(
         fetch(request)
@@ -68,7 +69,7 @@ self.addEventListener('fetch', e => {
           caches.open(CACHE).then(c => c.put(request, res.clone()))
         }
         return res
-      }).catch(() => caches.match('/'))
+      }).catch(() => caches.match(BASE))
     })
   )
 })
@@ -144,8 +145,8 @@ self.addEventListener('push', e => {
   e.waitUntil(
     self.registration.showNotification(data.title ?? 'Scan & Save', {
       body: data.body,
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
+      icon: `${BASE}icons/icon-192.png`,
+      badge: `${BASE}icons/icon-192.png`,
       tag: data.tag ?? 'ss-notification',
       data: { url: data.url ?? '/' },
     })

@@ -18,7 +18,8 @@ export function clearInstallPrompt() { _installPrompt = null }
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      await navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      const base = import.meta.env.BASE_URL
+      await navigator.serviceWorker.register(`${base}sw.js`, { scope: base })
 
       // Listen for background sync completion — refresh items
       navigator.serviceWorker.addEventListener('message', (e) => {
