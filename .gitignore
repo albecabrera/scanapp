@@ -1,5 +1,6 @@
 frontend/node_modules/
 frontend/dist/
 backend/config.php
+backend/config.prod.php
 *.DS_Store
 keys/

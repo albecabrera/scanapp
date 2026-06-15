@@ -7,27 +7,15 @@ pero los bloques están en el orden correcto para hacer el primer deploy.
 
 ## BLOQUE 0 — Antes de tocar el servidor
 
-- [ ] **Generar JWT_SECRET fuerte**
-  ```bash
-  openssl rand -base64 48
-  ```
-  Guardar el output; va en `config.php` como `JWT_SECRET`.
+- [x] **Generar JWT_SECRET fuerte** — generado el 2026-06-15, guardado en `backend/config.prod.php`
+- [x] **Generar claves VAPID** — `backend/keys/vapid_private.prod.pem` (P-256, 256 bit)
+  - Clave pública: `BPAFNT8lgs8jkf-OYRRvkwvPgm63ye6kIJmyW17dyL7O_olSmjBB_AdlroslnsJonWCFRq2-tBnrF5X31ZBEoLA`
+- [x] **`backend/config.prod.php` creado** — JWT + VAPID pre-rellenados; solo falta:
+  - `DB_PASS` — contraseña para el usuario `scanapp_user`
+  - `FRONTEND_ORIGIN` — `https://TUDOMINIO.COM`
+  - `VAPID_SUBJECT` — `mailto:CAMBIAR@TUDOMINIO.COM`
 
-- [ ] **Generar claves VAPID**
-  ```bash
-  mkdir -p backend/keys
-  openssl ecparam -genkey -name prime256v1 -noout -out backend/keys/vapid_private.pem
-  # Derivar clave pública (ver backend/config.example.php para el one-liner completo)
-  ```
-  Guardar la clave pública base64url para `config.php`.
-
-- [ ] **Crear `backend/config.php` de producción**
-  Copiar de `config.example.php` y rellenar:
-  - `DB_HOST` / `DB_USER` / `DB_PASS` (usuario dedicado, no root)
-  - `JWT_SECRET` (el generado arriba)
-  - `FRONTEND_ORIGIN` → `https://tudominio.com`
-  - `APP_BASE` → `/scanapp` (o vacío si va en la raíz)
-  - `VAPID_PUBLIC_KEY` / `VAPID_SUBJECT`
+- [ ] **Completar `backend/config.prod.php`** — rellenar los 3 campos pendientes (DB_PASS, FRONTEND_ORIGIN, VAPID_SUBJECT)
 
 - [ ] **Elegir stack de servidor**
   - Nginx + PHP-FPM → usar `nginx.conf` (recomendado para VPS)
