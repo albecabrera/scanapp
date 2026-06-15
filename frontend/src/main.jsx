@@ -19,7 +19,26 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
       const base = import.meta.env.BASE_URL
-      await navigator.serviceWorker.register(`${base}sw.js`, { scope: base })
+      const reg = await navigator.serviceWorker.register(`${base}sw.js`, { scope: base })
+
+      // Notify app when a new SW version is waiting
+      function notifyUpdate(sw) {
+        window.dispatchEvent(new CustomEvent('ss-sw-update', { detail: sw }))
+      }
+
+      // Already waiting from a prior visit
+      if (reg.waiting && navigator.serviceWorker.controller) {
+        notifyUpdate(reg.waiting)
+      }
+
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing
+        newSW?.addEventListener('statechange', () => {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            notifyUpdate(newSW)
+          }
+        })
+      })
 
       // Listen for background sync completion — refresh items
       navigator.serviceWorker.addEventListener('message', (e) => {

@@ -174,6 +174,10 @@ export const translations = {
       restored: 'Restaurado',
       saved: 'Guardado',
     },
+    update: {
+      available: 'Nueva versión disponible',
+      reload: 'Actualizar',
+    },
     notifications: {
       permTitle: '¿Activar notificaciones?',
       permSub: 'Te avisamos cuando un producto está por vencer',
@@ -359,6 +363,10 @@ export const translations = {
       restored: 'Wiederhergestellt',
       saved: 'Gespeichert',
     },
+    update: {
+      available: 'Neue Version verfügbar',
+      reload: 'Aktualisieren',
+    },
     notifications: {
       permTitle: 'Benachrichtigungen aktivieren?',
       permSub: 'Wir erinnern dich, wenn ein Produkt bald abläuft',
@@ -543,6 +551,10 @@ export const translations = {
       undo: 'Undo',
       restored: 'Restored',
       saved: 'Saved',
+    },
+    update: {
+      available: 'New version available',
+      reload: 'Update',
     },
     notifications: {
       permTitle: 'Enable notifications?',

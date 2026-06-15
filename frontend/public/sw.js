@@ -138,6 +138,12 @@ async function replayQueue() {
   }
 }
 
+// ── SW Update ─────────────────────────────────────────────────────────────
+
+self.addEventListener('message', e => {
+  if (e.data?.type === 'SKIP_WAITING') self.skipWaiting()
+})
+
 // ── Web Push ───────────────────────────────────────────────────────────────
 
 self.addEventListener('push', e => {

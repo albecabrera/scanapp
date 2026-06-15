@@ -54,10 +54,11 @@ export const useStore = create(
 
       toastQueue: [],
       // action: { label, onClick } — toasts with an action stay longer (undo window)
-      addToast: (label, action = null) => {
+      // ms: override auto-dismiss duration
+      addToast: (label, action = null, ms = null) => {
         const id = Date.now() + Math.random()
         set(s => ({ toastQueue: [...s.toastQueue, { label, id, action }] }))
-        setTimeout(() => set(s => ({ toastQueue: s.toastQueue.filter(t => t.id !== id) })), action ? 5000 : 2400)
+        setTimeout(() => set(s => ({ toastQueue: s.toastQueue.filter(t => t.id !== id) })), ms ?? (action ? 5000 : 2400))
       },
       removeToast: (id) => set(s => ({ toastQueue: s.toastQueue.filter(t => t.id !== id) })),
 

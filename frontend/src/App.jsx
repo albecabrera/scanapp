@@ -54,6 +54,26 @@ export default function App() {
     }
   }, [theme])
 
+  // SW update available — show persistent toast with reload action
+  useEffect(() => {
+    const handler = (e) => {
+      const newSW = e.detail
+      useStore.getState().addToast(
+        t.update?.available ?? 'Nueva versión disponible',
+        {
+          label: t.update?.reload ?? 'Actualizar',
+          onClick: () => {
+            newSW.postMessage({ type: 'SKIP_WAITING' })
+            navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload(), { once: true })
+          },
+        },
+        15000,
+      )
+    }
+    window.addEventListener('ss-sw-update', handler)
+    return () => window.removeEventListener('ss-sw-update', handler)
+  }, [t])
+
   // Refresh items when background sync completes
   useEffect(() => {
     const handler = () => {
