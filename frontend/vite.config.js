@@ -17,7 +17,7 @@ function swHashPlugin() {
         const sw = readFileSync(swPath, 'utf8')
         const hash = createHash('sha1').update(sw + Date.now()).digest('hex').slice(0, 8)
         writeFileSync(swPath, sw.replace('__SW_CACHE_VERSION__', hash))
-      } catch {}
+      } catch { /* sw.js not in output (e.g. dev) — skip hash injection */ }
     },
   }
 }

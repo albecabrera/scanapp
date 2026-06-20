@@ -1,12 +1,24 @@
 # Scan & Save
 
-PWA para gestión del inventario doméstico. Escanea códigos de barras, registra fechas de vencimiento y recibe notificaciones antes de que los productos expiren. Soporta múltiples miembros del hogar con sincronización en tiempo real y modo offline.
+PWA para gestión del inventario doméstico. Escanea códigos de barras, **lee la fecha de vencimiento impresa con OCR on-device**, y envía notificaciones antes de que los productos expiren. Soporta múltiples miembros del hogar con sincronización en tiempo real y modo offline.
+
+## Funciones principales
+
+| Función | Cómo funciona |
+|---------|---------------|
+| **Escaneo de código de barras** | `BarcodeDetector` nativo con fallback a ZXing. Resuelve nombre/marca/foto vía Open Food Facts (cache 30 días). |
+| **OCR de fecha de vencimiento** | Tras escanear, el botón "Escanear fecha" saca foto del envase y lee el MHD/best-before con Tesseract.js. Reconoce `DD.MM.YYYY`, `MM/YYYY`, ISO y `DD MES YYYY` (es/de/en). Elige la fecha futura más cercana. Todo en el dispositivo — la imagen nunca se sube. |
+| **Sugerencia inteligente de caducidad** | Heurística por nombre + fallback por categorías de Open Food Facts (yogures, lácteos, congelados…). Chips de fecha rápidos. |
+| **Modo lote (ráfaga)** | Escanea varios productos seguidos sin salir de la cámara; contador en vivo. Ideal para vaciar la compra del súper. |
+| **Notificaciones de vencimiento** | Web Push diario (cron) a todos los miembros del hogar según sus umbrales, + fallback de notificación local al abrir la app. |
+| **Hogar compartido** | Varios miembros, roles admin/member, invitaciones, sincronización en tiempo real. |
+| **Offline-first** | Inventario cacheado en IndexedDB; escrituras encoladas y reenviadas con Background Sync. |
 
 ## Stack
 
 | Capa | Tecnología |
 |------|-----------|
-| Frontend | React 19 + Vite 8, Zustand, ZXing (barcode), PWA (SW + Web Push) |
+| Frontend | React 19 + Vite 8, Zustand, ZXing (barcode), Tesseract.js (OCR de fecha, lazy-load), PWA (SW + Web Push) |
 | Backend | PHP 8.4, sin frameworks, JWT HS256 custom, Web Push RFC 8291/8292 |
 | Base de datos | MariaDB 10.4 / MySQL 8 |
 | Datos de productos | Open Food Facts API (cache server-side 30 días) |
@@ -259,7 +271,7 @@ Base URL: `/scanapp/api/v1`
 | Miembros | `GET /households/:id/members`, `DELETE/PATCH /households/:id/members/:uid` |
 | Invitaciones | `POST /households/:id/invites`, `POST /invites/join` |
 | Inventario | `GET/POST /households/:id/items`, `PATCH/DELETE /households/:id/items/:iid`, `POST /households/:id/items/:iid/consume` |
-| Productos | `GET /products/:ean` (EAN → Open Food Facts + cache 30d) |
+| Productos | `GET /products/:ean` (EAN → Open Food Facts + cache 30d; devuelve nombre, marca, foto y `categories` para la sugerencia de caducidad) |
 | Compras | `GET/POST /households/:id/shopping`, `PATCH/DELETE /households/:id/shopping/:sid` |
 | Notificaciones | `GET/PATCH /households/:id/notifications`, `PATCH /households/:id/notifications/me` |
 | Push | `POST/DELETE /push/subscribe`, `GET /push/vapid-key` |
@@ -282,6 +294,11 @@ Documentación completa: `design_handoff_scan_and_save/API_SPEC.md`
 | SW update detection (toast "Actualizar") | ✅ |
 | Soporte iOS (apple-mobile-web-app-*) | ✅ |
 | window-controls-overlay (desktop PWA) | ✅ |
+| OCR de fecha on-device (Tesseract.js, lazy chunk ~120 KB gzip) | ✅ |
+
+**Optimización del bundle:** las pantallas y librerías pesadas (ScanScreen, ZXing, Tesseract.js) van en chunks separados con carga diferida (`import()` dinámico). El núcleo inicial pesa ~75 KB gzip; Tesseract.js (~120 KB gzip) solo se descarga la primera vez que el usuario usa "Escanear fecha".
+
+**Nota sobre el OCR:** Tesseract.js descarga su worker, WASM y modelo de idioma desde CDN (jsDelivr) en la primera ejecución. La imagen del producto **nunca sale del dispositivo** (el OCR corre en el navegador), pero la función requiere conexión la primera vez. Para OCR 100% offline habría que auto-hospedar los assets de Tesseract (ver `TODO.md`, backlog).
 
 ---
 

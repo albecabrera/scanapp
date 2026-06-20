@@ -3,7 +3,25 @@
 Checklist ordenado por prioridad. Cada bloque puede hacerse independientemente del siguiente,
 pero los bloques están en el orden correcto para hacer el primer deploy.
 
-**Última actualización:** 2026-06-15
+**Última actualización:** 2026-06-20
+
+---
+
+## NUEVO (2026-06-20) — Features core de escaneo ✅ COMPLETO
+
+- [x] **OCR de fecha de vencimiento** — `frontend/src/lib/ocr.js` (Tesseract.js lazy-load).
+  Botón "Escanear fecha" en el form de scan. Reconoce DD.MM.YYYY, MM/YYYY, ISO, "DD MES YYYY".
+- [x] **Modo lote (ráfaga)** — escaneo continuo sin salir de cámara, con contador.
+- [x] **Sugerencia de caducidad por categorías OFF** — `products.php` devuelve `categories_tags`;
+  `expirySuggest.js` mapea categoría → shelf-life (mucha más cobertura que keywords).
+- [x] **Foto del producto en el form de scan** — usa `image_url` de Open Food Facts.
+- [x] **Fix bug TZ en `daysUntil`** — parseo local midnight (evita off-by-one en TZ negativas/DST).
+- [x] **Fix doble prompt de cámara** — `initCamera` adquiere el stream una sola vez.
+- [x] **Cron notifica a TODOS los miembros** del hogar en su umbral (antes solo al que agregó).
+- [x] **Fix notificación push** — al tocar, enfoca ventana abierta y resuelve URL contra el scope
+  (antes abría pestaña nueva al root del dominio, roto bajo `/scanapp/`).
+- [x] **Build de producción verificado** — `DEPLOY_PATH=/tmp/... npm run build` → limpio,
+  Tesseract en chunk lazy separado, SW hash inyectado.
 
 ---
 
@@ -233,5 +251,13 @@ pero los bloques están en el orden correcto para hacer el primer deploy.
 
 - [ ] **Soporte de idioma `navigator.language`** — auto-detectar idioma del browser
   en el primer login y setearlo como default (actualmente default es `de`).
+
+- [ ] **OCR offline (auto-hospedar Tesseract.js)** — actualmente worker/WASM/modelo se bajan
+  de jsDelivr en la primera ejecución. Copiar `tesseract.js-core` + `eng.traineddata` a
+  `public/tesseract/` y setear `workerPath`/`corePath`/`langPath` locales en `lib/ocr.js`.
+  Hace el OCR 100% offline y elimina la dependencia de CDN (~12 MB extra en el deploy).
+
+- [ ] **OCR de ticket del súper** — escanear el recibo completo y crear varios items de una.
+  Extiende `lib/ocr.js` con parseo de líneas. Validar primero el OCR de fecha en producción.
 
 - [x] **Offline.html** — creada y registrada en SW (`frontend/public/offline.html`)

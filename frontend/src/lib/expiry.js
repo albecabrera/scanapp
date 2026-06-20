@@ -2,9 +2,12 @@ export function daysUntil(dateStr) {
   if (!dateStr) return null
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  const exp = new Date(dateStr)
+  // Parse YYYY-MM-DD as LOCAL midnight (new Date('2026-06-20') is UTC → off-by-one
+  // in negative timezones). Take only the date part to be safe.
+  const [y, m, d] = String(dateStr).slice(0, 10).split('-').map(Number)
+  const exp = new Date(y, (m || 1) - 1, d || 1)
   exp.setHours(0, 0, 0, 0)
-  return Math.ceil((exp - today) / 86_400_000)
+  return Math.round((exp - today) / 86_400_000)
 }
 
 export function expiryKind(days) {

@@ -12,7 +12,14 @@ function products_lookup(string $ean): void {
     $stmt->execute([$ean]);
     $cached = $stmt->fetch();
     if ($cached) {
-        json_ok(['ean' => $cached['ean'], 'name' => $cached['name'], 'brand' => $cached['brand'], 'image_url' => $cached['image_url'], 'cached' => true]);
+        json_ok([
+            'ean'        => $cached['ean'],
+            'name'       => $cached['name'],
+            'brand'      => $cached['brand'],
+            'image_url'  => $cached['image_url'],
+            'categories' => off_categories(json_decode($cached['raw_json'] ?? 'null', true)['product'] ?? null),
+            'cached'     => true,
+        ]);
     }
 
     $url = "https://world.openfoodfacts.org/api/v2/product/$ean.json";
@@ -44,5 +51,28 @@ function products_lookup(string $ean): void {
         ON DUPLICATE KEY UPDATE name = VALUES(name), brand = VALUES(brand), image_url = VALUES(image_url), raw_json = VALUES(raw_json), fetched_at = NOW()
     ")->execute([$ean, $name, $brand, $img, $raw]);
 
-    json_ok(['ean' => $ean, 'name' => $name, 'brand' => $brand, 'image_url' => $img, 'cached' => false]);
+    json_ok([
+        'ean'        => $ean,
+        'name'       => $name,
+        'brand'      => $brand,
+        'image_url'  => $img,
+        'categories' => off_categories($p),
+        'cached'     => false,
+    ]);
+}
+
+/**
+ * Normalize Open Food Facts category tags into a flat lowercase list.
+ * Used client-side as a fallback for shelf-life expiry suggestions.
+ */
+function off_categories(?array $product): array {
+    if (!$product) return [];
+    $tags = $product['categories_tags'] ?? [];
+    if (!is_array($tags)) return [];
+    // Tags look like "en:dairies", "en:yogurts" — strip the lang prefix.
+    return array_values(array_filter(array_map(function ($t) {
+        $t = strtolower((string)$t);
+        $pos = strpos($t, ':');
+        return $pos !== false ? substr($t, $pos + 1) : $t;
+    }, $tags)));
 }
