@@ -166,5 +166,17 @@ self.addEventListener('push', e => {
 
 self.addEventListener('notificationclick', e => {
   e.notification.close()
-  e.waitUntil(clients.openWindow(e.notification.data.url))
+  // Resolve target against the SW scope so it works under a subpath (/scanapp/).
+  // Treat a bare '/' (cron default) as the app root = scope.
+  const raw = e.notification.data?.url
+  const rel = !raw || raw === '/' ? './' : raw.replace(/^\//, '')
+  const target = new URL(rel, self.registration.scope).href
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(wins => {
+      // Focus an already-open app window instead of opening a new tab
+      const open = wins.find(w => w.url.startsWith(self.registration.scope))
+      if (open) return open.focus()
+      return self.clients.openWindow(target)
+    })
+  )
 })
