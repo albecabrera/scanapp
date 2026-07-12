@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { api } from '../lib/api'
 import { useStore, getActiveHousehold } from '../lib/store'
 import { useT } from '../lib/i18n'
@@ -15,6 +15,7 @@ import Sheet from '../components/molecules/Sheet'
 import ProductDetailSheet from './sheets/ProductDetailSheet'
 
 const PTR_THRESHOLD = 72  // px of pull to trigger refresh
+const LOCATIONS = ['fridge', 'freezer', 'pantry']
 
 export default function InventoryScreen() {
   const lang = useStore(s => s.lang)
@@ -109,24 +110,26 @@ export default function InventoryScreen() {
     }
   }
 
-  const soonItems = items.filter(i => {
+  // Derived from items+lang only — memoized so search keystrokes (which only
+  // change `query`) don't re-run matchRecipes / countExpiringSoon needlessly.
+  const soonItems = useMemo(() => items.filter(i => {
     const d = daysUntil(i.expires_at)
     return d !== null && d >= 0 && d <= 7
-  })
+  }), [items])
+  const soonCount = useMemo(() => countExpiringSoon(items), [items])
+  const recipes = useMemo(() => matchRecipes(soonItems, lang), [soonItems, lang])
 
-  const LOCATIONS = ['fridge', 'freezer', 'pantry']
   const q = query.trim().toLowerCase()
-  const filtered = items
-    .filter(i => locationFilter === 'all' || i.location === locationFilter)
-    .filter(i => !q || i.name.toLowerCase().includes(q) || (i.brand ?? '').toLowerCase().includes(q) || (i.ean ?? '').includes(q))
-  const grouped = LOCATIONS.reduce((acc, loc) => {
-    const group = filtered.filter(i => i.location === loc)
-    if (group.length) acc.push({ loc, items: group })
-    return acc
-  }, [])
-
-  const soonCount = countExpiringSoon(items)
-  const recipes = matchRecipes(soonItems, lang)
+  const grouped = useMemo(() => {
+    const filtered = items
+      .filter(i => locationFilter === 'all' || i.location === locationFilter)
+      .filter(i => !q || i.name.toLowerCase().includes(q) || (i.brand ?? '').toLowerCase().includes(q) || (i.ean ?? '').includes(q))
+    return LOCATIONS.reduce((acc, loc) => {
+      const group = filtered.filter(i => i.location === loc)
+      if (group.length) acc.push({ loc, items: group })
+      return acc
+    }, [])
+  }, [items, locationFilter, q])
 
   return (
     <div

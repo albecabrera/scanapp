@@ -121,9 +121,14 @@ export default function ScanScreen({ onItemAdded }) {
       fb.triggerSuccess()
       setPhase('adding')
     } catch {
+      // Not in OpenFoodFacts — fall through to manual entry instead of
+      // stranding the user with no way to add the product.
+      setProduct(null)
+      setFoundEan(manualEan.trim())
       fb.setLoading(false)
       fb.triggerError()
       addToast(ts.notFound)
+      setPhase('adding')
     } finally {
       setLookupLoading(false)
     }
@@ -219,8 +224,6 @@ export default function ScanScreen({ onItemAdded }) {
             {lookupLoading ? '…' : ts.lookup}
           </button>
         </div>
-
-        {product && <AddItemForm {...{ product, manualName, setManualName, location, setLocation, expiresAt, setExpiresAt, quantity, setQuantity, assignedTo, setAssignedTo, members: hh?.members ?? [], ts, t, addItem, loading }} />}
       </div>
     )
   }

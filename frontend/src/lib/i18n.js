@@ -133,6 +133,12 @@ export const translations = {
       qty: 'Cantidad',
       noExpiry: 'Sin fecha',
     },
+    calendar: {
+      add: 'Agregar al calendario',
+      summary: (name) => `Vence: ${name}`,
+      alarm: (name) => `${name} está por vencer`,
+      downloaded: 'Evento descargado — abrilo para agregarlo',
+    },
     auth: {
       loginTitle: 'Bienvenido',
       loginSub: 'Iniciá sesión para continuar',
@@ -331,6 +337,12 @@ export const translations = {
       qty: 'Menge',
       noExpiry: 'Kein MHD',
     },
+    calendar: {
+      add: 'Zum Kalender hinzufügen',
+      summary: (name) => `MHD: ${name}`,
+      alarm: (name) => `${name} läuft bald ab`,
+      downloaded: 'Termin heruntergeladen — zum Hinzufügen öffnen',
+    },
     auth: {
       loginTitle: 'Willkommen',
       loginSub: 'Anmelden, um fortzufahren',
@@ -528,6 +540,12 @@ export const translations = {
       addedBy: 'Added by',
       qty: 'Quantity',
       noExpiry: 'No date',
+    },
+    calendar: {
+      add: 'Add to calendar',
+      summary: (name) => `Expires: ${name}`,
+      alarm: (name) => `${name} is about to expire`,
+      downloaded: 'Event downloaded — open it to add',
     },
     auth: {
       loginTitle: 'Welcome',

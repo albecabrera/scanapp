@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../../lib/store'
 import { daysUntil, expiryKind, expiryLabel } from '../../lib/expiry'
+import { downloadExpiryICS } from '../../lib/calendar'
 import { api } from '../../lib/api'
 import { useFeedback } from '../../lib/useFeedback'
 import Sheet from '../../components/molecules/Sheet'
@@ -25,7 +26,16 @@ export default function ProductDetailSheet({ open, itemId, onClose, t }) {
   const days = daysUntil(item.expires_at)
   const kind = expiryKind(days)
   const dt = t?.detail ?? {}
+  const cal = t?.calendar ?? {}
   const undoLabel = t?.toast?.undo ?? 'Deshacer'
+
+  function addToCalendar() {
+    const ok = downloadExpiryICS(item, {
+      summary: cal.summary ?? (n => `Vence: ${n}`),
+      alarm: cal.alarm ?? (n => `${n} está por vencer`),
+    })
+    if (ok) addToast(cal.downloaded ?? 'Evento descargado')
+  }
 
   function startEdit() {
     setForm({
@@ -291,6 +301,20 @@ export default function ProductDetailSheet({ open, itemId, onClose, t }) {
             }}>
             {dt.consume ?? 'Consumir 1'}
           </button>
+
+          {item.expires_at && (
+            <button
+              onClick={addToCalendar}
+              style={{
+                width: '100%', height: 46, borderRadius: 'var(--radius-btn)',
+                background: 'var(--color-surface2)', color: 'var(--color-ink)',
+                border: '1px solid var(--color-border)',
+                fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 12,
+                fontFamily: 'var(--font-body)',
+              }}>
+              {cal.add ?? 'Agregar al calendario'}
+            </button>
+          )}
 
           <button
             onClick={remove}
