@@ -37,7 +37,9 @@ function swHashPlugin() {
 
 export default defineConfig(({ command }) => ({
   plugins: [react(), cleanAssetsPlugin(), swHashPlugin()],
-  base: command === 'build' ? '/scanapp/' : '/',
+  // Prod (subdominio scanapp.albertocabrera.de) sirve en la raíz: build con
+  // BASE_PATH=/ . Local (XAMPP) queda en /scanapp/ por defecto.
+  base: process.env.BASE_PATH ?? (command === 'build' ? '/scanapp/' : '/'),
   server: {
     port: 5174,
     proxy: {

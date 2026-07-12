@@ -8,7 +8,7 @@ Plan concreto para tu stack real: **frontend Vite/React 19 estático** + **backe
 
 | Opción | URL | `vite base` | `APP_BASE` |
 |---|---|---|---|
-| **Subdominio (recomendado)** | `https://scanapp.tudominio.com/` | `/` | `''` |
+| **Subdominio (recomendado)** | `https://scanapp.albertocabrera.de/` | `/` | `''` |
 | Subcarpeta | `https://tudominio.com/scanapp/` | `/scanapp/` | `/scanapp` |
 
 El subdominio es más limpio: la PWA vive en la raíz, el scope del service worker es `/`, y no arrastrás el prefijo `/scanapp/` por todos lados. **El resto del plan asume subdominio.** Si vas por subcarpeta, ajustá `base` en `vite.config.js` y `APP_BASE` en `config.php`.
@@ -19,8 +19,8 @@ El subdominio es más limpio: la PWA vive en la raíz, el scope del service work
 
 ## 1. Crear el dominio/subdominio en Plesk
 
-1. **Websites & Domains → Add Subdomain** → `scanapp.tudominio.com`.
-2. Document root: dejá el default (`/httpdocs` o `/scanapp.tudominio.com`). Anotá la ruta real, la vas a usar como `DEPLOY_PATH`.
+1. **Websites & Domains → Add Subdomain** → `scanapp.albertocabrera.de`.
+2. Document root: dejá el default (`/httpdocs` o `/scanapp.albertocabrera.de`). Anotá la ruta real, la vas a usar como `DEPLOY_PATH`.
 3. **PHP Settings**: elegí **PHP 8.1+** (FPM). Verificá que estén activas las extensiones `pdo_mysql`, `openssl`, `mbstring`, `json`, `curl`.
 
 ## 2. Base de datos (MySQL/MariaDB)
@@ -31,15 +31,15 @@ El subdominio es más limpio: la PWA vive en la raíz, el scope del service work
 
 ## 3. Construir el frontend (en tu Mac, no en el VPS)
 
-Plesk normalmente no trae Node para builds. Construí localmente apuntando a una carpeta temporal:
+Plesk normalmente no trae Node para builds. Construí localmente apuntando a una carpeta temporal. `BASE_PATH=/` hace que la PWA sirva en la raíz del subdominio (ya está parametrizado en `vite.config.js`):
 
 ```bash
 cd ~/repos/scanapp/frontend
-DEPLOY_PATH=/tmp/scanapp-dist npm ci
-DEPLOY_PATH=/tmp/scanapp-dist npm run build
+npm ci
+BASE_PATH=/ DEPLOY_PATH=/tmp/scanapp-dist npm run build
 ```
 
-Para subdominio en la raíz, cambiá `base` a `'/'` antes de construir (o parametrizalo). El resultado en `/tmp/scanapp-dist` incluye `index.html`, `assets/`, `sw.js`, `manifest.json`, `offline.html`, `icons/` y el **`.htaccess`** ya arreglado (el fix del `no-store` del SW).
+El resultado en `/tmp/scanapp-dist` incluye `index.html`, `assets/`, `sw.js`, `manifest.json`, `offline.html`, `icons/` y el **`.htaccess`** ya arreglado (el fix del `no-store` del SW).
 
 ## 4. Subir archivos
 
@@ -64,7 +64,7 @@ Subida (elegí una):
 1. Copiá `backend/config.prod.php` a `<DEPLOY_PATH>/api/config.php` y completá:
    - `DB_*` con los datos del paso 2.
    - `APP_BASE` = `''` (subdominio) o `'/scanapp'` (subcarpeta).
-   - `FRONTEND_ORIGIN` = `https://scanapp.tudominio.com` (sin barra final).
+   - `FRONTEND_ORIGIN` = `https://scanapp.albertocabrera.de` (sin barra final).
    - `VAPID_SUBJECT` = tu mail real.
    - `JWT_SECRET` y las claves VAPID: **regeneralas para producción**, no reutilices las del repo (ver `config.example.php`).
 2. Subí `keys/vapid_private.prod.pem`.
@@ -116,9 +116,9 @@ Sin SSH: importá esos `.sql` desde **phpMyAdmin** (Databases → phpMyAdmin) en
 ## 10. Verificación post-deploy (checklist)
 
 ```bash
-curl -s https://scanapp.tudominio.com/api/v1/health      # {"status":"ok", database:"connected"}
-curl -sI https://scanapp.tudominio.com/sw.js | grep -i cache-control   # → no-store
-curl -sI https://scanapp.tudominio.com/assets/…​.js | grep -i cache-control # → immutable
+curl -s https://scanapp.albertocabrera.de/api/v1/health      # {"status":"ok", database:"connected"}
+curl -sI https://scanapp.albertocabrera.de/sw.js | grep -i cache-control   # → no-store
+curl -sI https://scanapp.albertocabrera.de/assets/…​.js | grep -i cache-control # → immutable
 ```
 
 En el navegador (DevTools → Application):
@@ -133,7 +133,7 @@ En el navegador (DevTools → Application):
 
 ```bash
 # local
-cd ~/repos/scanapp/frontend && DEPLOY_PATH=/tmp/scanapp-dist npm run build
+cd ~/repos/scanapp/frontend && BASE_PATH=/ DEPLOY_PATH=/tmp/scanapp-dist npm run build
 rsync -a /tmp/scanapp-dist/ vps:<DEPLOY_PATH>/
 rsync -a ~/repos/scanapp/backend/ vps:<DEPLOY_PATH>/api/ --exclude config.php --exclude 'keys/'
 # en el VPS: aplicar migraciones nuevas si las hay
