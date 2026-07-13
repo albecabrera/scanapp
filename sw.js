@@ -1,0 +1,182 @@
+// Cache version injected by Vite at build time; 'dev' used in development
+const CACHE = 'ss-5fc1fa9a'
+const BASE = new URL(self.registration.scope).pathname  // e.g. '/scanapp/' or '/'
+const SHELL = [BASE, `${BASE}manifest.json`, `${BASE}offline.html`]
+
+// ── Install ────────────────────────────────────────────────────────────────
+
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(c => c.addAll(SHELL))
+      .then(() => self.skipWaiting())
+  )
+})
+
+// ── Activate — prune old caches ────────────────────────────────────────────
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(
+        keys.filter(k => k !== CACHE).map(k => caches.delete(k))
+      ))
+      .then(() => self.clients.claim())
+  )
+})
+
+// ── Fetch ──────────────────────────────────────────────────────────────────
+
+self.addEventListener('fetch', e => {
+  const { request } = e
+  const url = new URL(request.url)
+
+  // API: network-first; cache GET items for offline read
+  if (url.pathname.startsWith(`${BASE}api/`)) {
+    if (url.pathname.includes('/items') && request.method === 'GET') {
+      e.respondWith(
+        fetch(request)
+          .then(res => {
+            caches.open(CACHE).then(c => c.put(request, res.clone()))
+            return res
+          })
+          .catch(() => caches.match(request))
+      )
+    }
+    return
+  }
+
+  // Product images: stale-while-revalidate
+  if (url.hostname === 'images.openfoodfacts.org') {
+    e.respondWith(
+      caches.open(CACHE).then(async c => {
+        const cached = await c.match(request)
+        const fresh = fetch(request)
+          .then(res => { c.put(request, res.clone()); return res })
+          .catch(() => null)
+        return cached ?? fresh
+      })
+    )
+    return
+  }
+
+  // App shell: cache-first
+  e.respondWith(
+    caches.match(request).then(cached => {
+      if (cached) return cached
+      return fetch(request).then(res => {
+        if (res.ok && ['script', 'style', 'document', 'font'].includes(request.destination)) {
+          caches.open(CACHE).then(c => c.put(request, res.clone()))
+        }
+        return res
+      }).catch(() => {
+        // Navigation requests → offline page; everything else → silently fail
+        if (request.destination === 'document' || request.mode === 'navigate') {
+          return caches.match(`${BASE}offline.html`)
+        }
+      })
+    })
+  )
+})
+
+// ── Background Sync ────────────────────────────────────────────────────────
+
+self.addEventListener('sync', e => {
+  if (e.tag === 'ss-sync') {
+    e.waitUntil(replayQueue())
+  }
+})
+
+async function openSyncDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('ss-db', 1)
+    req.onupgradeneeded = (ev) => {
+      const db = ev.target.result
+      if (!db.objectStoreNames.contains('items')) db.createObjectStore('items')
+      if (!db.objectStoreNames.contains('syncQueue')) {
+        db.createObjectStore('syncQueue', { keyPath: 'id', autoIncrement: true })
+      }
+    }
+    req.onsuccess = () => resolve(req.result)
+    req.onerror = () => reject(req.error)
+  })
+}
+
+async function replayQueue() {
+  const db = await openSyncDB()
+
+  const ops = await new Promise((resolve) => {
+    const req = db.transaction('syncQueue', 'readonly')
+      .objectStore('syncQueue').getAll()
+    req.onsuccess = () => resolve(req.result ?? [])
+    req.onerror = () => resolve([])
+  })
+
+  let allOk = true
+  for (const op of ops) {
+    try {
+      const res = await fetch(op.url, {
+        method: op.method,
+        headers: op.headers,
+        body: op.body ? JSON.stringify(op.body) : null,
+      })
+      if (res.ok || res.status < 500) {
+        // remove from queue on success or client error (won't fix itself)
+        await new Promise(resolve => {
+          const req = db.transaction('syncQueue', 'readwrite')
+            .objectStore('syncQueue').delete(op.id)
+          req.onsuccess = resolve
+          req.onerror = resolve
+        })
+      } else {
+        allOk = false
+      }
+    } catch {
+      allOk = false
+    }
+  }
+
+  if (allOk && ops.length > 0) {
+    // Notify all open clients to refresh
+    const clients = await self.clients.matchAll({ type: 'window' })
+    clients.forEach(c => c.postMessage({ type: 'SS_SYNC_DONE' }))
+  }
+}
+
+// ── SW Update ─────────────────────────────────────────────────────────────
+
+self.addEventListener('message', e => {
+  if (e.data?.type === 'SKIP_WAITING') self.skipWaiting()
+})
+
+// ── Web Push ───────────────────────────────────────────────────────────────
+
+self.addEventListener('push', e => {
+  const data = e.data?.json() ?? {}
+  e.waitUntil(
+    self.registration.showNotification(data.title ?? 'Scan & Save', {
+      body: data.body,
+      icon: `${BASE}icons/icon-192.png`,
+      badge: `${BASE}icons/icon-192.png`,
+      tag: data.tag ?? 'ss-notification',
+      data: { url: data.url ?? '/' },
+    })
+  )
+})
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close()
+  // Resolve target against the SW scope so it works under a subpath (/scanapp/).
+  // Treat a bare '/' (cron default) as the app root = scope.
+  const raw = e.notification.data?.url
+  const rel = !raw || raw === '/' ? './' : raw.replace(/^\//, '')
+  const target = new URL(rel, self.registration.scope).href
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(wins => {
+      // Focus an already-open app window instead of opening a new tab
+      const open = wins.find(w => w.url.startsWith(self.registration.scope))
+      if (open) return open.focus()
+      return self.clients.openWindow(target)
+    })
+  )
+})

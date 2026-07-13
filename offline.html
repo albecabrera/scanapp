@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="de" data-theme>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#237A4B" />
+  <title>Sin conexión — Scan &amp; Save</title>
+  <style>
+    :root {
+      --bg:      #F4F6EF;
+      --ink:     #1A1C16;
+      --primary: #237A4B;
+      --muted:   #6B7280;
+      --radius:  20px;
+      --font:    'Schibsted Grotesk', system-ui, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #111410; --ink: #E8EBE0; --muted: #9CA3AF; }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; background: var(--bg); color: var(--ink);
+      font-family: var(--font); -webkit-font-smoothing: antialiased;
+    }
+    body {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 24px; padding: 32px; text-align: center;
+    }
+    .icon {
+      width: 72px; height: 72px; border-radius: var(--radius);
+      background: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+    p  { font-size: 15px; color: var(--muted); line-height: 1.5; max-width: 280px; }
+    button {
+      background: var(--primary); color: #fff;
+      border: none; border-radius: 100px;
+      padding: 14px 32px; font-size: 15px; font-weight: 600;
+      font-family: var(--font); cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    button:active { opacity: 0.75; }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="icon">
+    <svg width="34" height="34" viewBox="0 0 24 24" stroke="#fff" fill="none">
+      <g stroke-width="1.8" stroke-linecap="round">
+        <path d="M4 8V6.5A2.5 2.5 0 0 1 6.5 4H8M16 4h1.5A2.5 2.5 0 0 1 20 6.5V8
+                 M20 16v1.5a2.5 2.5 0 0 1-2.5 2.5H16M8 20H6.5A2.5 2.5 0 0 1 4 17.5V16"/>
+        <path d="M7.5 9.5v5M10.5 9.5v5M13.5 9.5v5M16.5 9.5v5"/>
+      </g>
+    </svg>
+  </div>
+
+  <h1 id="title">Sin conexión</h1>
+  <p  id="body">Revisá tu conexión a internet e intentá de nuevo.</p>
+  <button id="btn" onclick="location.reload()">Reintentar</button>
+
+  <script>
+    // Match app language from localStorage
+    try {
+      const lang = JSON.parse(localStorage.getItem('ss-store') ?? '{}')?.state?.lang ?? 'de'
+      const msgs = {
+        de: { title: 'Offline',          body: 'Überprüfe deine Internetverbindung und versuche es erneut.',  btn: 'Erneut versuchen' },
+        es: { title: 'Sin conexión',     body: 'Revisá tu conexión a internet e intentá de nuevo.',           btn: 'Reintentar'       },
+        en: { title: 'You\'re offline',  body: 'Check your internet connection and try again.',                btn: 'Retry'            },
+      }
+      const m = msgs[lang] ?? msgs.de
+      document.getElementById('title').textContent = m.title
+      document.getElementById('body').textContent  = m.body
+      document.getElementById('btn').textContent   = m.btn
+    } catch {}
+  </script>
+</body>
+</html>
