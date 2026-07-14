@@ -11,7 +11,8 @@ function items_list(array $session, int $hid): void {
         $params[] = $_GET['location'];
     }
     if (!empty($_GET['expires_within'])) {
-        $where[]  = 'i.expires_at IS NOT NULL AND DATEDIFF(i.expires_at, CURDATE()) <= ? AND DATEDIFF(i.expires_at, CURDATE()) >= 0';
+        // Sargable range so idx_item_household_expires can be used
+        $where[]  = 'i.expires_at BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)';
         $params[] = (int)$_GET['expires_within'];
     }
 

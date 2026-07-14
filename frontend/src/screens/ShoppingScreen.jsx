@@ -13,6 +13,17 @@ export default function ShoppingScreen() {
   const ts = t.shop
   const activeHouseholdId = useStore(s => s.activeHouseholdId)
   const addToast = useStore(s => s.addToast)
+  const theme = useStore(s => s.theme)
+  const setTheme = useStore(s => s.setTheme)
+
+  const isDark = theme === 'dark' ||
+    (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+
+  function toggleTheme() {
+    const next = isDark ? 'light' : 'dark'
+    setTheme(next)
+    api.auth.update({ theme: next }).catch(() => {})
+  }
 
   const [items, setItems] = useState([])
   const [input, setInput] = useState('')
@@ -123,7 +134,12 @@ export default function ShoppingScreen() {
               {ts.pending(pending.length)}
             </p>
           </div>
-          <LangSwitcher />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <LangSwitcher />
+            <GlassIconBtn onClick={toggleTheme}>
+              <Icon name={isDark ? 'sun' : 'moon'} size={19} color="var(--color-ink)" />
+            </GlassIconBtn>
+          </div>
         </div>
 
         {/* Add form */}
@@ -249,6 +265,23 @@ export default function ShoppingScreen() {
         )}
       </div>
     </div>
+  )
+}
+
+function GlassIconBtn({ children, onClick, style = {} }) {
+  return (
+    <button onClick={onClick} style={{
+      width: 38, height: 38, borderRadius: 'var(--radius-chip)',
+      background: 'var(--glass-bg-light)',
+      backdropFilter: 'var(--glass-blur)',
+      WebkitBackdropFilter: 'var(--glass-blur)',
+      border: 'var(--glass-border-light)', boxShadow: 'var(--glass-shine-light)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+      transition: 'background 0.2s',
+      ...style,
+    }}>
+      {children}
+    </button>
   )
 }
 

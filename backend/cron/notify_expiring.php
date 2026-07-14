@@ -50,12 +50,12 @@ foreach ($rows as $r) {
 
     $days       = (int)$r['days_left'];
     $thresholds = array_map('intval', explode(',', $r['user_thresholds'] ?: $r['hh_thresholds']));
-    $isAdder    = (int)$r['user_id'] === (int)$r['added_by'];
     $warnAll    = (int)$r['warn_all'] === 1 && $days <= 1;
 
-    // Threshold hit (exact day) for the adder, or critical warn-all for everyone
+    // Shared kitchen: every member is notified on their threshold day (or day 0).
+    // warn_all_tomorrow stays as the critical escalation for day ≤ 1.
     $hit = in_array($days, $thresholds, true) || $days === 0;
-    if (!($warnAll || ($isAdder && $hit))) continue;
+    if (!($warnAll || $hit)) continue;
 
     $t    = $texts[$r['lang']] ?? $texts['de'];
     $when = $days === 0 ? $t['today'] : ($days === 1 ? $t['tomorrow'] : sprintf($t['days'], $days));

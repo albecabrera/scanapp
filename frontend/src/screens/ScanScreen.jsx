@@ -3,8 +3,9 @@ import { api } from '../lib/api'
 import { useStore } from '../lib/store'
 import { useT } from '../lib/i18n'
 import { useFeedback } from '../lib/useFeedback'
-import { startCamera, stopCamera, startScan, requestCameraPermission, toggleTorch } from '../lib/scanner'
+import { startCamera, stopCamera, startScan, toggleTorch } from '../lib/scanner'
 import { expiryChips } from '../lib/expirySuggest'
+import { recognizeExpiryDate } from '../lib/ocr'
 import Icon from '../components/atoms/Icon'
 import LangSwitcher from '../components/atoms/LangSwitcher'
 
@@ -37,6 +38,8 @@ export default function ScanScreen({ onItemAdded }) {
   const [lookupLoading, setLookupLoading] = useState(false)
   const [torchOn, setTorchOn] = useState(false)
   const [torchSupported, setTorchSupported] = useState(false)
+  const [batchMode, setBatchMode] = useState(false)
+  const [batchCount, setBatchCount] = useState(0)
   const fb = useFeedback()
 
   useEffect(() => {
@@ -46,8 +49,8 @@ export default function ScanScreen({ onItemAdded }) {
 
   async function initCamera() {
     try {
-      const permitted = await requestCameraPermission()
-      if (!permitted) { setPhase('noCam'); return }
+      // Single getUserMedia call — calling requestCameraPermission() first
+      // re-acquired the camera and made some browsers prompt/flicker twice.
       const stream = await startCamera(videoRef.current)
       streamRef.current = stream
       // Check torch support
@@ -64,6 +67,25 @@ export default function ScanScreen({ onItemAdded }) {
   function cleanup() {
     stopScanRef.current?.()
     stopCamera(streamRef.current)
+  }
+
+  // Resume detection on the already-open stream (used by batch mode)
+  async function restartScan() {
+    if (!streamRef.current) return
+    const stop = await startScan(videoRef.current, handleFound)
+    stopScanRef.current = stop
+  }
+
+  // Reset the add form back to a clean scanning state without leaving the screen
+  function resetForNext() {
+    setProduct(null)
+    setFoundEan('')
+    setManualName('')
+    setExpiresAt('')
+    setQuantity(1)
+    setAssignedTo(null)
+    setPhase('scanning')
+    restartScan()
   }
 
   async function handleTorch() {
@@ -99,9 +121,14 @@ export default function ScanScreen({ onItemAdded }) {
       fb.triggerSuccess()
       setPhase('adding')
     } catch {
+      // Not in OpenFoodFacts — fall through to manual entry instead of
+      // stranding the user with no way to add the product.
+      setProduct(null)
+      setFoundEan(manualEan.trim())
       fb.setLoading(false)
       fb.triggerError()
       addToast(ts.notFound)
+      setPhase('adding')
     } finally {
       setLookupLoading(false)
     }
@@ -122,8 +149,14 @@ export default function ScanScreen({ onItemAdded }) {
       upsertItem(item)
       setNewItemId(item.id)
       setTimeout(() => setNewItemId(null), 2200)
-      addToast(t.toast.added)
-      onItemAdded()
+      if (batchMode) {
+        setBatchCount(c => c + 1)
+        addToast(ts.batchAdded)
+        resetForNext()
+      } else {
+        addToast(t.toast.added)
+        onItemAdded()
+      }
     } catch (err) {
       if (err.offline) {
         // Queued for sync — optimistically add with temp id
@@ -140,7 +173,8 @@ export default function ScanScreen({ onItemAdded }) {
         }
         upsertItem(tempItem)
         addToast(t.toast.offline ?? 'Sin conexión — cambios pendientes')
-        onItemAdded()
+        if (batchMode) { setBatchCount(c => c + 1); resetForNext() }
+        else onItemAdded()
       } else {
         addToast(t.toast.error)
       }
@@ -190,8 +224,6 @@ export default function ScanScreen({ onItemAdded }) {
             {lookupLoading ? '…' : ts.lookup}
           </button>
         </div>
-
-        {product && <AddItemForm {...{ product, manualName, setManualName, location, setLocation, expiresAt, setExpiresAt, quantity, setQuantity, assignedTo, setAssignedTo, members: hh?.members ?? [], ts, t, addItem, loading }} />}
       </div>
     )
   }
@@ -214,6 +246,16 @@ export default function ScanScreen({ onItemAdded }) {
       <div style={{ position: 'absolute', top: 60, left: 20, right: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <GlassBtn icon="x" onClick={onItemAdded} />
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          {batchMode && batchCount > 0 && (
+            <span style={{
+              background: 'var(--color-primary)', color: 'var(--color-on-primary)',
+              borderRadius: 'var(--radius-chip)', padding: '6px 12px',
+              fontSize: 13, fontWeight: 700,
+            }}>
+              {ts.batchCount(batchCount)}
+            </span>
+          )}
+          <GlassBtn icon="copy" onClick={() => setBatchMode(b => !b)} active={batchMode} />
           <LangSwitcher dark />
           {torchSupported && (
             <GlassBtn
@@ -293,7 +335,7 @@ export default function ScanScreen({ onItemAdded }) {
             position: 'absolute', bottom: 150, left: 0, right: 0, textAlign: 'center',
             color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: 500,
           }}>
-            {ts.hint}
+            {batchMode ? ts.batchHint : ts.hint}
           </p>
           {/* Manual EAN entry — fallback when camera scanning struggles (iOS Safari etc.) */}
           <button
@@ -330,17 +372,41 @@ function GlassBtn({ icon, onClick, active = false }) {
 }
 
 function AddItemForm({ product, manualName, setManualName, location, setLocation, expiresAt, setExpiresAt, quantity, setQuantity, assignedTo, setAssignedTo, members, ts, t, addItem, loading }) {
+  const fileRef = useRef()
+  const [ocr, setOcr] = useState('idle') // idle | busy | done | fail
+
+  async function handleDateFile(e) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // allow re-pick same file
+    if (!file) return
+    setOcr('busy')
+    try {
+      const { date } = await recognizeExpiryDate(file)
+      if (date) { setExpiresAt(date); setOcr('done') }
+      else setOcr('fail')
+    } catch {
+      setOcr('fail')
+    }
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
-        <div style={{
-          width: 54, height: 54, borderRadius: 'var(--radius-tile)',
-          background: 'var(--tile-0-bg)', color: 'var(--tile-0-fg)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 22, fontWeight: 700, flexShrink: 0,
-        }}>
-          {(manualName[0] ?? '?').toUpperCase()}
-        </div>
+        {product?.image_url ? (
+          <img src={product.image_url} alt="" style={{
+            width: 54, height: 54, borderRadius: 'var(--radius-tile)',
+            objectFit: 'cover', flexShrink: 0, background: 'var(--color-surface2)',
+          }} />
+        ) : (
+          <div style={{
+            width: 54, height: 54, borderRadius: 'var(--radius-tile)',
+            background: 'var(--tile-0-bg)', color: 'var(--tile-0-fg)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 22, fontWeight: 700, flexShrink: 0,
+          }}>
+            {(manualName[0] ?? '?').toUpperCase()}
+          </div>
+        )}
         <div style={{ flex: 1 }}>
           <input
             value={manualName}
@@ -402,9 +468,29 @@ function AddItemForm({ product, manualName, setManualName, location, setLocation
               fontFamily: 'var(--font-body)', outline: 'none', boxSizing: 'border-box',
             }}
           />
+          {/* OCR — read the printed best-before date from a photo */}
+          <input ref={fileRef} type="file" accept="image/*" capture="environment"
+            onChange={handleDateFile} style={{ display: 'none' }} />
+          <button type="button" onClick={() => fileRef.current?.click()} disabled={ocr === 'busy'} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            width: '100%', height: 40, marginTop: 8, borderRadius: 'var(--radius-btn)',
+            background: 'var(--color-surface2)', border: '1px solid var(--color-border)',
+            color: 'var(--color-ink)', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+            fontFamily: 'var(--font-body)',
+          }}>
+            <Icon name="scan" size={16} color="var(--color-primary)" />
+            {ocr === 'busy' ? ts.scanningDate : ts.scanDate}
+          </button>
+          {ocr === 'fail' && (
+            <div style={{ fontSize: 11.5, color: 'var(--color-danger)', marginTop: 5 }}>{ts.dateNotFound}</div>
+          )}
+          {ocr === 'done' && (
+            <div style={{ fontSize: 11.5, color: 'var(--color-primary)', marginTop: 5, fontWeight: 600 }}>✓ {ts.dateFound}</div>
+          )}
+
           {/* Quick date suggestions — smart by category, then standard offsets */}
           <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-            {expiryChips(manualName).map(chip => {
+            {expiryChips(manualName, product?.categories).map(chip => {
               const active = expiresAt === chip.date
               return (
                 <button key={chip.days} onClick={() => setExpiresAt(active ? '' : chip.date)} style={{

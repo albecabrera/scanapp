@@ -6,15 +6,18 @@
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
     Header always set Permissions-Policy "camera=self, notifications=self, microphone=()"
 
-    # Allow SW to control the full /scanapp/ scope
+    # Long-lived cache for hashed assets (Vite adds content hash to filenames).
+    # Declared BEFORE the sw.js block so the sw.js Cache-Control override wins:
+    # Apache applies matching `Header always set` in source order, last wins.
+    <FilesMatch "\.(js|css|woff2?)$">
+        Header always set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+
+    # Service worker: must NOT be cached (so updates ship) and must control the
+    # full /scanapp/ scope. Kept after the asset rule to override its max-age.
     <FilesMatch "sw\.js$">
         Header always set Service-Worker-Allowed "/"
         Header always set Cache-Control "no-store"
-    </FilesMatch>
-
-    # Long-lived cache for hashed assets (Vite adds content hash to filenames)
-    <FilesMatch "\.(js|css|woff2?)$">
-        Header always set Cache-Control "public, max-age=31536000, immutable"
     </FilesMatch>
 
     # No cache for manifest and index
